@@ -1,0 +1,23 @@
+{
+  "name": "signaling-app",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "socket.io": "^2.3.0"
+  },
+  "scripts": {
+    "start": "babel-node index.ts --extensions \".ts\""
+  },
+  "devDependencies": {
+    "@babel/core": "^7.7.7",
+    "@babel/node": "^7.7.7",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.7.4",
+    "@babel/plugin-proposal-optional-chaining": "^7.7.5",
+    "@babel/preset-env": "^7.7.7",
+    "@babel/preset-typescript": "^7.7.7",
+    "@types/node": "^12.12.21",
+    "@types/socket.io": "^2.1.4",
+    "typescript": "^3.7.4"
+  }
+}
