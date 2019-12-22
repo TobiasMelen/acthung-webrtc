@@ -6,10 +6,14 @@
   "scripts": {
     "start": "parcel src/index.html"
   },
+  "browserslist": [
+    "last 1 Chrome versions"
+  ],
   "devDependencies": {
     "@babel/core": "^7.7.7",
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.7.4",
     "@babel/plugin-proposal-optional-chaining": "^7.7.5",
+    "@types/reach__router": "^1.2.6",
     "@types/react": "^16.9.17",
     "@types/react-dom": "^16.9.4",
     "@types/socket.io-client": "^1.4.32",
@@ -17,6 +21,9 @@
     "typescript": "^3.7.3"
   },
   "dependencies": {
+    "@reach/router": "^1.2.1",
+    "@types/qrcode-svg": "^1.0.0",
+    "qrcode-svg": "^1.1.0",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
     "socket.io-client": "^2.3.0"

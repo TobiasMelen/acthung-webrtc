@@ -1,21 +1,15 @@
 import ReactDOM from "react-dom";
 import React, { useEffect } from "react";
 import SnakeCanvas from "./SnakeCanvas";
-import LobbyConnection from "./LobbyConnection";
+import LobbyConnection from "./connection/LobbyDataChannels";
+import { Router } from "@reach/router";
+import Lobby from "./Lobby";
+import Client from "./Client";
 
 ReactDOM.render(
-  <>
-    <LobbyConnection lobbyName="test" />
-    <SnakeCanvas
-      input={[
-        {
-          color: "#f00",
-          onCollision() {
-            console.log("collided!");
-          }
-        }
-      ]}
-    />
-  </>,
+  <Router>
+    <Lobby path="/lobby/:lobbyName" />
+    <Client path="/:lobbyName" />
+  </Router>,
   document.getElementById("app-root")
 );
