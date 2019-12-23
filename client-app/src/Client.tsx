@@ -3,8 +3,7 @@ import React, { useMemo } from "react";
 import PlayerUI from "./PlayerUI";
 
 type Props = {
-  path: string;
-  lobbyName?: string;
+  lobbyName: string;
 };
 
 export default function Client({ lobbyName = "new" }: Props) {

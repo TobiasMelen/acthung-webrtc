@@ -4,8 +4,7 @@ import SnakeCanvas from "./SnakeCanvas";
 import QrCode from "./QrCode";
 
 type Props = {
-  path: string;
-  lobbyName?: string;
+  lobbyName: string;
 };
 
 export default function Lobby({ lobbyName = "new" }: Props) {
@@ -32,7 +31,7 @@ export default function Lobby({ lobbyName = "new" }: Props) {
           <>
             <h1>Waiting for players</h1>
             <QrCode
-              value={`${window.location.protocol}//${window.location.host}/${lobbyName}`}
+              value={`${window.location.protocol}//${window.location.host}#${lobbyName}`}
             />
           </>
         )

@@ -4,7 +4,7 @@ import { stunServers } from "./connectionConstants";
 
 type Props = {
   lobbyName: string;
-  children?: (dataChannels: RTCDataChannel[]) => JSX.Element | null;
+  children: (dataChannels: RTCDataChannel[]) => JSX.Element;
 };
 
 type SocketMessage = RTCSessionDescriptionInit;
