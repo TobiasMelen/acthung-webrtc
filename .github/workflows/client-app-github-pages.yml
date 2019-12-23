@@ -11,15 +11,11 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v1
 
-    - name: Install
-      uses: borales/actions-yarn@v2.0.0
-      with:
-        cmd: --cwd client-app install
-    
-    - name: Build
-      uses: borales/actions-yarn@v2.0.0
-      with:
-        cmd: --cwd client-app install
+    - name: Install and build
+      run: |
+        cd client-app
+        yarn install
+        yarn run parcel build src/index.html
 
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@releases/v3
