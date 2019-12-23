@@ -11,15 +11,19 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v1
 
+    - name: Install
+      uses: borales/actions-yarn@v2.0.0
+      with:
+        cmd: --cwd client-app install
+    
     - name: Build
-      run: |
-        cd client-app
-        yarn
-        yarn run parcel build
+      uses: borales/actions-yarn@v2.0.0
+      with:
+        cmd: --cwd client-app install
 
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@releases/v3
       with:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_DEPLOYMENT_TOKEN }}
         BRANCH: gh-pages
         FOLDER: client-app/dist
