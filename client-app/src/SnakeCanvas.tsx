@@ -1,7 +1,11 @@
 import createSnakeCanvas, { SnakeInput } from "./createSnakeCanvas";
 import React, { useRef, useEffect } from "react";
 
-type Props = { input: SnakeInput[] };
+type Props = {
+  input: (SnakeInput & {
+    onTurnInput(callBack: (turn: number) => void): void;
+  })[];
+};
 export default function SnakeCanvas({ input }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -9,6 +13,9 @@ export default function SnakeCanvas({ input }: Props) {
       return;
     }
     const snakeCanvas = createSnakeCanvas(containerRef.current, input);
+    snakeCanvas.snakeTurners.forEach((turner, index) =>
+      input[index]?.onTurnInput(turner)
+    );
     document.addEventListener("keydown", e => {
       console.log(e.key);
       switch (e.key) {
@@ -23,18 +30,18 @@ export default function SnakeCanvas({ input }: Props) {
       }
     });
     document.addEventListener("keyup", e => {
-        console.log(e.key);
-        switch (e.key) {
-          case "a": {
-            snakeCanvas.snakeTurners[0](1);
-            break;
-          }
-          case "s": {
-            snakeCanvas.snakeTurners[0](-1);
-            break;
-          }
+      console.log(e.key);
+      switch (e.key) {
+        case "a": {
+          snakeCanvas.snakeTurners[0](1);
+          break;
         }
-      });
+        case "s": {
+          snakeCanvas.snakeTurners[0](-1);
+          break;
+        }
+      }
+    });
     snakeCanvas.run();
     return () => snakeCanvas.stop();
   }, [containerRef.current]);

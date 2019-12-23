@@ -55,14 +55,14 @@ export default function createSnakeCanvas(
     direction: Math.round(Math.random() * 360),
     position: {
       x:
-      (Math.random() + startPositionSpread) *
-      (context.canvas.width * startPositionSpread),
+        (Math.random() + startPositionSpread) *
+        (context.canvas.width * startPositionSpread),
       y:
-      (Math.random() + startPositionSpread) *
-      (context.canvas.height * startPositionSpread)
+        (Math.random() + startPositionSpread) *
+        (context.canvas.height * startPositionSpread)
     },
     currentHoleSection: 0,
-    erasePath: null as null | {x: number, y: number},
+    erasePath: null as null | { x: number; y: number }
   }));
 
   //function for colliding and drawing snake
@@ -71,10 +71,13 @@ export default function createSnakeCanvas(
       return;
     }
 
-    const willCollide = checkCollision &&
+    const willCollide =
+      checkCollision &&
       context.getImageData(
-        snake.position.x + (snakeRadius + snakeSpeed) * Math.cos(snake.direction),
-        snake.position.y + (snakeRadius + snakeSpeed) * Math.sin(snake.direction),
+        snake.position.x +
+          (snakeRadius + snakeSpeed) * Math.cos(snake.direction),
+        snake.position.y +
+          (snakeRadius + snakeSpeed) * Math.sin(snake.direction),
         1,
         1
       ).data[3] !== 0;
@@ -82,7 +85,7 @@ export default function createSnakeCanvas(
       snake.onCollision();
       snake.hasCollided = true;
     }
-    
+
     context.beginPath();
     context.lineCap = "square";
     context.lineWidth = snakeRadius * 2;
@@ -118,10 +121,7 @@ export default function createSnakeCanvas(
       stopped = true;
     },
     snakeTurners: snakes.map(snake => (turn: number) => {
-      const newTurn = snake.turn + turn;
-      if (Math.abs(newTurn) <= 1) {
-        snake.turn = newTurn;
-      }
+      snake.turn = turn;
     })
   };
 }

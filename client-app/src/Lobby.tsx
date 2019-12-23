@@ -14,19 +14,26 @@ export default function Lobby({ lobbyName = "new" }: Props) {
       {channels =>
         channels.length ? (
           <SnakeCanvas
-            input={[
-              {
-                color: "#0F0",
-                onCollision() {
-                  console.log("collided!");
-                }
+            input={channels.map(channel => ({
+              color: "#0F0",
+              onCollision() {
+                console.log("collided!");
+              },
+              onTurnInput: turner => {
+                channel.onmessage = ev => {
+                  console.log(ev);
+                  const turn = parseFloat(ev.data);
+                  turn != null && turner(turn);
+                };
               }
-            ]}
+            }))}
           />
         ) : (
           <>
             <h1>Waiting for players</h1>
-            <QrCode value={`${window.location.protocol}//${window.location.host}/${lobbyName}`} />
+            <QrCode
+              value={`${window.location.protocol}//${window.location.host}/${lobbyName}`}
+            />
           </>
         )
       }
