@@ -1,0 +1,25 @@
+
+name: Deploy client-app to GitHub Pages
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: Install and build
+      run: |
+        cd client-app
+        yarn install
+        yarn run parcel build src/index.html
+
+    - name: Deploy
+      uses: JamesIves/github-pages-deploy-action@releases/v3
+      with:
+        GITHUB_TOKEN: ${{ secrets.GH_DEPLOYMENT_TOKEN }}
+        BRANCH: gh-pages
+        FOLDER: client-app/dist
