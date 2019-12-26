@@ -1,6 +1,8 @@
 import io from "socket.io";
 
-const socketServer = io(process.env.PORT ?? 8080);
+const socketServer = io(process.env.PORT ?? 8080, {
+  serveClient: false
+});
 
 socketServer.on("connect", socket => {
   const { hostLobby, joinLobby } = socket.handshake.query;
