@@ -1,4 +1,4 @@
-import ClientDataChannel from "./connection/ClientDataChannel";
+import ClientDataChannel from "../connection/ClientConnection";
 import React, { useMemo } from "react";
 import PlayerUI from "./PlayerUI";
 

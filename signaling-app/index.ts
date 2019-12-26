@@ -4,12 +4,10 @@ const socketServer = io(process.env.PORT ?? 8080);
 
 socketServer.on("connect", socket => {
   const { hostLobby, joinLobby } = socket.handshake.query;
-  console.log(hostLobby, joinLobby);
-  console.log(socket.rooms);
   if (hostLobby) {
     socket.join(hostLobby);
   } else if (joinLobby == null || !(joinLobby in socketServer.sockets.adapter.rooms)) {
-    socket.send("error", { reason: "empty room" });
+    socket.send("error", { reason: "EMPTY_ROOM" });
     socket.disconnect();
     return;
   }

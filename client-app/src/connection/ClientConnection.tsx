@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import io from "socket.io-client";
-import { stunServers } from "./connectionConstants";
+import {
+  createRTCPeerConnection,
+  createSignalClient
+} from "./commonConnections";
 
 type Props = {
   lobbyName: string;
@@ -10,8 +13,7 @@ type Props = {
 export default function ClientConnection({ lobbyName, children }: Props) {
   const [dataChannel, setDataChannel] = useState<RTCDataChannel>();
   useEffect(() => {
-    const signalClient = io(process.env.SIGNAL_URL, {
-      transports: ["websocket"],
+    const signalClient = createSignalClient({
       query: {
         joinLobby: lobbyName
       }
@@ -20,9 +22,8 @@ export default function ClientConnection({ lobbyName, children }: Props) {
       if (dataChannel != null) {
         return;
       }
-      const peerConnection = new RTCPeerConnection({
-        iceServers: [{ urls: stunServers }]
-      });
+
+      const peerConnection = createRTCPeerConnection();
 
       const channel = peerConnection.createDataChannel("Client data channel");
       channel.onopen = () => setDataChannel(channel);

@@ -4,10 +4,12 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "socket.io": "^2.3.0"
+    "socket.io": "^2.3.0",
+    "uws": "10.148.1"
   },
   "scripts": {
-    "start": "babel-node index.ts --extensions \".ts\""
+    "start": "babel-node index.ts --extensions \".ts\"",
+    "build": "parcel build index.ts --target node --bundle-node-modules"
   },
   "devDependencies": {
     "@babel/core": "^7.7.7",
@@ -18,6 +20,7 @@
     "@babel/preset-typescript": "^7.7.7",
     "@types/node": "^12.12.21",
     "@types/socket.io": "^2.1.4",
+    "parcel-bundler": "^1.12.4",
     "typescript": "^3.7.4"
   }
 }
