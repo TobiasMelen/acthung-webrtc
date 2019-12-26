@@ -2,16 +2,26 @@ import React, { useEffect, useState } from "react";
 import io from "socket.io-client";
 import {
   createRTCPeerConnection,
-  createSignalClient
+  createSignalClient,
+  ClientMessage,
+  LobbyMessage,
+  ConnectionListener,
+  ConnectionDispatch,
+  createChannelHandles
 } from "./commonConnections";
+
+export type LobbyConnection = {
+  send: ConnectionDispatch<ClientMessage>;
+  on: ConnectionListener<LobbyMessage>;
+};
 
 type Props = {
   lobbyName: string;
-  children(channel?: RTCDataChannel): JSX.Element;
+  children(connection?: LobbyConnection): JSX.Element;
 };
 
 export default function ClientConnection({ lobbyName, children }: Props) {
-  const [dataChannel, setDataChannel] = useState<RTCDataChannel>();
+  const [lobbyConnection, setLobbyConnection] = useState<LobbyConnection>();
   useEffect(() => {
     const signalClient = createSignalClient({
       query: {
@@ -19,15 +29,14 @@ export default function ClientConnection({ lobbyName, children }: Props) {
       }
     });
     signalClient.on("connect", async (s: any) => {
-      if (dataChannel != null) {
+      if (lobbyConnection != null) {
         return;
       }
-
       const peerConnection = createRTCPeerConnection();
 
       const channel = peerConnection.createDataChannel("Client data channel");
-      channel.onopen = () => setDataChannel(channel);
-      channel.onclose = () => setDataChannel(undefined);
+      channel.onopen = () => setLobbyConnection(createChannelHandles(channel));
+      channel.onclose = () => setLobbyConnection(undefined);
 
       peerConnection.onicecandidate = event => {
         if (event.candidate != null) {
@@ -48,5 +57,5 @@ export default function ClientConnection({ lobbyName, children }: Props) {
     });
   }, []);
 
-  return children(dataChannel);
+  return children(lobbyConnection);
 }

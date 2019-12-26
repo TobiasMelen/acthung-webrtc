@@ -7,7 +7,8 @@
     "start": "parcel src/index.html"
   },
   "browserslist": [
-    "last 1 Chrome versions"
+    "last 3 Chrome versions",
+    "last 2 Safari versions"
   ],
   "devDependencies": {
     "@babel/core": "^7.7.7",

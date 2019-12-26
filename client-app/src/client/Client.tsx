@@ -1,10 +1,16 @@
-import ClientDataChannel from "../connection/ClientConnection";
+import ClientDataChannel, {
+  LobbyConnection
+} from "../connection/ClientConnection";
 import React, { useMemo } from "react";
 import PlayerUI from "./PlayerUI";
 
 type Props = {
   lobbyName: string;
 };
+
+function PlayerMapper({ connection }: { connection?: LobbyConnection }) {
+  
+}
 
 export default function Client({ lobbyName = "new" }: Props) {
   return (
@@ -14,7 +20,7 @@ export default function Client({ lobbyName = "new" }: Props) {
           () =>
             channel &&
             ((turn: number) => {
-              channel.send(`${turn}`);
+              channel.send({ type: "turn", data: turn });
             }),
           [channel]
         );

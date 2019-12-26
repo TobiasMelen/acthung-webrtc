@@ -1,21 +1,23 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { PlayerState } from "../connection/commonConnections";
 import { ClientConnections } from "../connection/LobbyConnection";
-import useEffectWithPrevDeps from "../useEffectWithPrevDeps";
+import useEffectWithDeps from "../useEffectWithDeps";
 
 const allColors = ["#f00", "#0f0", "#00f", "#ff0", "#f0f", "#0ff", "#fff"];
 
 type PlayerStates = { [id: string]: PlayerState };
 
-export type Player = PlayerState & {
+type PlayerFunctions = {
   setState(state: PlayerState["state"]): void;
   setScore(score: number): void;
   onTurnInput(callBack: (turn: number) => void): void;
 };
 
+export type LobbyPlayer = PlayerState & PlayerFunctions;
+
 type Props = {
   clientConnections: ClientConnections;
-  children(players: Player[]): JSX.Element;
+  children(players: LobbyPlayer[]): JSX.Element;
 };
 
 function createColorAvailabilityChecker(...collections: PlayerStates[]) {
@@ -40,7 +42,7 @@ export default function Lobby({ clientConnections, children }: Props) {
   const [playerStates, setPlayerState] = useState<PlayerStates>({});
 
   //Create players from connections
-  useEffectWithPrevDeps(
+  useEffectWithDeps(
     prevDeps => {
       const [prevConnections] = prevDeps ?? [{}];
       setPlayerState(playerStates => {
@@ -94,12 +96,12 @@ export default function Lobby({ clientConnections, children }: Props) {
         }, {} as typeof playerStates);
       });
     },
-    [clientConnections]
+    [clientConnections] as const
   );
 
   //Report any changes in playerstate to client
-  useEffectWithPrevDeps(
-    (prevDeps) => {
+  useEffectWithDeps(
+    prevDeps => {
       const prevPlayerStates = prevDeps?.[0] ?? {};
       Object.keys(playerStates).forEach(key => {
         const newState = playerStates[key];
@@ -114,22 +116,32 @@ export default function Lobby({ clientConnections, children }: Props) {
     ]
   );
 
-  //Create players for game, this is very unnessecary work for every time someone scores.
-  const players = useMemo<Player[]>(
+  //Create player handler functions in a seperate memo to prevent all this closure generation on score changes.
+  const playerKeys = Object.keys(playerStates);
+  const playerFunctions = useMemo<{ [id: string]: PlayerFunctions }>(
     () =>
-      Object.keys(playerStates).map(key => {
-        const state = playerStates[key];
+      playerKeys.reduce((acc, key) => {
         const modifyPlayer = createPlayerModifier(key);
-        return {
-          ...state,
+        acc[key] = {
           setState: (state: PlayerState["state"]) =>
             modifyPlayer(player => ({ ...player, state })),
           setScore: (score: number) =>
             modifyPlayer(player => ({ ...player, score })),
           onTurnInput: turner => clientConnections[key].on("turn", turner)
         };
-      }),
-    [clientConnections, playerStates]
+        return acc;
+      }, {} as { [id: string]: PlayerFunctions }),
+    [clientConnections, playerKeys.join()]
+  );
+
+  //Create players for game, this is still a bit unnessecary work for every time someone scores.
+  const players = useMemo<LobbyPlayer[]>(
+    () =>
+      playerKeys.map(key => ({
+        ...playerStates[key],
+        ...playerFunctions[key]
+      })),
+    [playerFunctions, playerStates]
   );
 
   return children(players);

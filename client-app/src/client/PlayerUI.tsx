@@ -18,17 +18,25 @@ export default function PlayerUI({ setTurn, color }: Props) {
       }}
     >
       <div
-        style={{ height: "100%", width: "20%", background: "red" }}
+        style={{
+          height: "100%",
+          width: "20%",
+          background: "red",
+          touchAction: "manipulation"
+        }}
         onTouchStart={() => setTurn(-1)}
         onTouchEnd={() => setTurn(0)}
-      >
-      </div>
+      ></div>
       <div
-        style={{ height: "100%", width: "20%", background: "green"}}
+        style={{
+          height: "100%",
+          width: "20%",
+          background: "green",
+          touchAction: "manipulation"
+        }}
         onTouchStart={() => setTurn(1)}
         onTouchEnd={() => setTurn(0)}
-      >
-      </div>
+      ></div>
     </div>
   );
 }

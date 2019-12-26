@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createRTCPeerConnection, createSignalClient, ConnectionDispatch, LobbyMessage, ConnectionListener, ClientMessage, createChannelHandles } from "./commonConnections";
+import {
+  createRTCPeerConnection,
+  createSignalClient,
+  ConnectionDispatch,
+  LobbyMessage,
+  ConnectionListener,
+  ClientMessage,
+  createChannelHandles
+} from "./commonConnections";
 
 export type ClientConnection = {
-  send: ConnectionDispatch<LobbyMessage>
-  on: ConnectionListener<ClientMessage>
+  send: ConnectionDispatch<LobbyMessage>;
+  on: ConnectionListener<ClientMessage>;
 };
 
 export type ClientConnections = {

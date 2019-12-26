@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "babel-node index.ts --extensions \".ts\"",
-    "build": "parcel build index.ts --target node --bundle-node-modules"
+    "build": "cp app.yaml dist && parcel build index.ts --target node --bundle-node-modules"
   },
   "devDependencies": {
     "@babel/core": "^7.7.7",

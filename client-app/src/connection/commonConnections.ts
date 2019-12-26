@@ -20,7 +20,7 @@ export type PlayerState = {
   color: string;
   score: number;
   ready: boolean;
-  state: "joining" | "playing";
+  state: "joining" | "playing" | "dead";
 };
 
 export type LobbyMessage =
