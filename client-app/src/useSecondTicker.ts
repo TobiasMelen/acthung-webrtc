@@ -27,7 +27,7 @@ export default function useSecondTicker(seconds: number = 0) {
     (seconds?: number) => {
       pause();
       seconds != null && setSecondsLeft(seconds);
-      ticker.current = setTimeout(tick, 1000);
+      ticker.current = window.setTimeout(tick, 1000);
     },
     [pause]
   );

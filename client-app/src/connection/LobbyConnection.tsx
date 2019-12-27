@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  createRTCPeerConnection,
-  createSignalClient,
-  ConnectionDispatch,
-  LobbyMessage,
-  ConnectionListener,
   ClientMessage,
-  createChannelHandles
+  ConnectionDispatch,
+  ConnectionListener,
+  createChannelHandles,
+  createRTCPeerConnection,
+  LobbyMessage
 } from "./commonConnections";
+import useSignalClient from "./useSignalClient";
 
 export type ClientConnection = {
   send: ConnectionDispatch<LobbyMessage>;
@@ -32,14 +32,15 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
     {}
   );
 
-  const signalClient = useMemo(
-    () =>
-      createSignalClient({
+  const [signalClient, signalStatus] = useSignalClient(
+    useMemo(
+      () => ({
         query: {
           hostLobby: lobbyName
         }
       }),
-    [lobbyName]
+      [lobbyName]
+    )
   );
 
   const onClientDataChannel = useCallback(
@@ -53,7 +54,7 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
         );
       setClientConnections(connections => ({
         ...connections,
-        [id]: createChannelHandles(channel)
+        [id]: createChannelHandles(channel, ["ping"])
       }));
     },
     [setClientConnections]
@@ -89,9 +90,6 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
         signalClient.send({ data: localDescription, to: offerFrom });
       }
     );
-    return () => {
-      signalClient.disconnect();
-    };
   }, [signalClient, onClientDataChannel]);
   return children(clientConnections);
 }

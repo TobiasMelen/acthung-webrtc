@@ -3,7 +3,7 @@ import { PlayerState } from "../connection/commonConnections";
 import { ClientConnections } from "../connection/LobbyConnection";
 import useEffectWithDeps from "../useEffectWithDeps";
 
-const allColors = ["#f00", "#0f0", "#00f", "#ff0", "#f0f", "#0ff", "#fff"];
+const allColors = ["#0f0", "#f00", "#00f", "#ff0", "#f0f", "#0ff", "#fff"];
 
 type PlayerStates = { [id: string]: PlayerState };
 
@@ -34,9 +34,9 @@ export default function Lobby({ clientConnections, children }: Props) {
   const createPlayerModifier = (playerKey: string) => (
     fn: (prev: PlayerState) => PlayerState
   ) =>
-    setPlayerState(state => ({
-      ...state,
-      [playerKey]: fn(state[playerKey])
+    setPlayerState(({ [playerKey]: player, ...otherPlayers }) => ({
+      ...otherPlayers,
+      [playerKey]: fn(player)
     }));
 
   const [playerStates, setPlayerState] = useState<PlayerStates>({});
@@ -65,7 +65,8 @@ export default function Lobby({ clientConnections, children }: Props) {
                 color: assignedColor,
                 ready: false,
                 score: 0,
-                state: "joining"
+                state: "joining",
+                latency: 0
               };
             } else {
               clientConnections[connKey].send({
@@ -102,21 +103,21 @@ export default function Lobby({ clientConnections, children }: Props) {
   //Report any changes in playerstate to client
   useEffectWithDeps(
     prevDeps => {
-      const prevPlayerStates = prevDeps?.[0] ?? {};
+      const [prevClientConnections, prevPlayerStates] = prevDeps ?? [];
       Object.keys(playerStates).forEach(key => {
         const newState = playerStates[key];
-        const oldState = prevPlayerStates[key];
-        if (newState != oldState) {
-          clientConnections[key].send({ type: "playerState", data: newState });
+        if (
+          newState != prevPlayerStates?.[key] ||
+          clientConnections[key] != prevClientConnections?.[key]
+        ) {
+          clientConnections[key]?.send({ type: "playerState", data: newState });
         }
       });
     },
-    /*Client connections should be in deps, but isnt to keep effect order in this comp.*/ [
-      playerStates
-    ]
+    [clientConnections, playerStates] as const
   );
 
-  //Create player handler functions in a seperate memo to prevent all this closure generation on score changes.
+  //Create player handler functions in a seperate memo to prevent too much closure generation on score changes.
   const playerKeys = Object.keys(playerStates);
   const playerFunctions = useMemo<{ [id: string]: PlayerFunctions }>(
     () =>
@@ -127,7 +128,7 @@ export default function Lobby({ clientConnections, children }: Props) {
             modifyPlayer(player => ({ ...player, state })),
           setScore: (score: number) =>
             modifyPlayer(player => ({ ...player, score })),
-          onTurnInput: turner => clientConnections[key].on("turn", turner)
+          onTurnInput: turner => clientConnections[key]?.on("turn", turner)
         };
         return acc;
       }, {} as { [id: string]: PlayerFunctions }),

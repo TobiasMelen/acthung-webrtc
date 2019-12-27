@@ -2,4 +2,6 @@ node_modules
 .cache
 dist
 yarn-error.log
+#I don't know if keeping .env in vs and using .env.local is a holy sin or whatever, but nerds
 .env.local
+.vscode

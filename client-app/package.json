@@ -14,9 +14,11 @@
     "@babel/core": "^7.7.7",
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.7.4",
     "@babel/plugin-proposal-optional-chaining": "^7.7.5",
+    "@types/qrcode-svg": "^1.0.0",
     "@types/react": "^16.9.17",
     "@types/react-dom": "^16.9.4",
     "@types/socket.io-client": "^1.4.32",
+    "@types/uuid": "^3.4.6",
     "parcel": "^1.12.4",
     "typescript": "^3.7.3"
   },
@@ -24,10 +26,10 @@
     "lineWidth": 90
   },
   "dependencies": {
-    "@types/qrcode-svg": "^1.0.0",
     "qrcode-svg": "^1.1.0",
     "react": "^16.12.0",
     "react-dom": "^16.12.0",
-    "socket.io-client": "^2.3.0"
+    "socket.io-client": "^2.3.0",
+    "uuid": "^3.3.3"
   }
 }

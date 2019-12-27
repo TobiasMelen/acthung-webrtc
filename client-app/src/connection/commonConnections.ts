@@ -8,7 +8,7 @@ export type ConnectionListener<MessageType extends { type: string }> = <
   handler: (data: MessageData<MessageType, TKey>) => void
 ) => void;
 
-type MessageData<MessageType, TKey> = MessageType extends {
+export type MessageData<MessageType, TKey> = MessageType extends {
   type: TKey;
   data: infer Data;
 }
@@ -21,23 +21,36 @@ export type PlayerState = {
   score: number;
   ready: boolean;
   state: "joining" | "playing" | "dead";
+  latency: number;
 };
+
+type Ping = { type: "ping"; data: { timeStamp: number } };
 
 export type LobbyMessage =
   | { type: "playerState"; data: PlayerState }
-  | { type: "err"; data: { reason: "lobbyFull"; queuespot: number } };
+  | { type: "err"; data: { reason: "lobbyFull"; queuespot: number } }
+  | Ping;
 
 export type ClientMessage =
   | { type: "setColor"; data: string }
   | { type: "setReady"; data: boolean }
   | { type: "setName"; data: string }
-  | { type: "turn"; data: number };
+  | { type: "turn"; data: number }
+  | Ping;
 
 export function createSignalClient(opts: SocketIOClient.ConnectOpts) {
-  return io(process.env.SIGNAL_URL, {
-    transports: ["websocket"],
-    ...opts
-  });
+  return io(
+    process.env.SIGNAL_URL ??
+      (() => {
+        throw new Error(
+          "SIGNAL_URL for signaling server must be specified in env."
+        );
+      })(),
+    {
+      transports: ["websocket"],
+      ...opts
+    }
+  );
 }
 
 export function createRTCPeerConnection() {
@@ -50,22 +63,30 @@ export function createChannelHandles<
   TSend,
   TRecieve extends { type: string; data: any }
 >(
-  channel: RTCDataChannel
+  channel: RTCDataChannel,
+  bounceMessages: string[] = []
 ): {
   send: ConnectionDispatch<TSend>;
   on: ConnectionListener<TRecieve>;
 } {
+  const handlers: Map<TRecieve["type"], TRecieve["data"]> = new Map();
+  channel.addEventListener("message", event => {
+    const json = JSON.parse(event.data) as TRecieve;
+    const type = json.type as string | undefined;
+    if (type && bounceMessages.indexOf(type) !== -1) {
+      channel.send(event.data);
+    }
+    const handler = type && handlers.get(type);
+    if (handler) {
+      handler(json.data);
+    }
+  });
   return {
     send(data) {
       channel.send(JSON.stringify(data));
     },
     on(message, handler) {
-      channel.addEventListener("message", event => {
-        const json = JSON.parse(event.data) as TRecieve;
-        if ("type" in json && json.type === message && "data" in json) {
-          handler(json.data);
-        }
-      });
+      handlers.set(message, handler);
     }
   };
 }

@@ -5,7 +5,7 @@ const socketServer = io(process.env.PORT ?? 8080, {
 });
 
 socketServer.on("connect", socket => {
-  const { hostLobby, joinLobby } = socket.handshake.query;
+  const { hostLobby, joinLobby, from } = socket.handshake.query;
   if (hostLobby) {
     socket.join(hostLobby);
   } else if (joinLobby == null || !(joinLobby in socketServer.sockets.adapter.rooms)) {
@@ -13,8 +13,11 @@ socketServer.on("connect", socket => {
     socket.disconnect();
     return;
   }
-  socket.on("message", ({to, ...data}: any) => {
-    const dataWithSender = { ...data, from: socket.id };
+  if(from){
+    socket.join(from);
+  }
+  socket.on("message", ({to, from, ...data}: any) => {
+    const dataWithSender = { ...data, from: from ?? socket.id };
     if (to) {
       socket.to(to).send(dataWithSender);
     } else {
