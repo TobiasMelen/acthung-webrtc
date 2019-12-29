@@ -1,2 +1,4 @@
 runtime: nodejs
 env: flex
+network:
+  session_affinity: true
