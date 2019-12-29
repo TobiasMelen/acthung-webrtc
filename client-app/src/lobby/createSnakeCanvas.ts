@@ -3,13 +3,15 @@ export type SnakeInput = {
   onCollision: () => void;
 };
 
+const frameTimeSixtyFps = 1000 / 60;
+
 export default function createSnakeCanvas(
   container: HTMLElement,
   snakeInputs: SnakeInput[],
   {
-    snakeSpeed = 2,
+    snakeSpeed = 1.5,
     snakeRadius = 3.5,
-    turnAngle = 0.045,
+    turnRadius = 0.045,
     startPositionSpread = 0.5,
     borderColor = "#fff",
     chanceToBecomeAHole = 0.01,
@@ -28,9 +30,9 @@ export default function createSnakeCanvas(
     (() => {
       throw new Error("Could not get Snake canvas 2d context");
     })();
-  const shortestAxis =
-    canvas.height > canvas.width ? canvas.height : canvas.width;
-  const scaleFactor = shortestAxis;
+  // const shortestAxis =
+  //   canvas.height > canvas.width ? canvas.height : canvas.width;
+  // const scaleFactor = shortestAxis;
   // context.scale(canvas.width / scaleFactor, canvas.height / scaleFactor);
 
   //Draw border
@@ -66,7 +68,12 @@ export default function createSnakeCanvas(
   }));
 
   //function for colliding and drawing snake
-  function moveSnake(snake: typeof snakes[0], checkCollision = true) {
+  function moveSnake(
+    snake: typeof snakes[0],
+    snakeSpeed: number,
+    turnAngle: number,
+    checkCollision = true
+  ) {
     if (snake.hasCollided) {
       return;
     }
@@ -75,9 +82,9 @@ export default function createSnakeCanvas(
       checkCollision &&
       context.getImageData(
         snake.position.x +
-          (snakeRadius + snakeSpeed) * Math.cos(snake.direction),
+          (snakeSpeed + 4) * Math.cos(snake.direction),
         snake.position.y +
-          (snakeRadius + snakeSpeed) * Math.sin(snake.direction),
+          (snakeSpeed + 4) * Math.sin(snake.direction),
         1,
         1
       ).data[3] !== 0;
@@ -102,9 +109,21 @@ export default function createSnakeCanvas(
   let stopped = true;
   function run() {
     let checkCollision = true;
+    let timeStamp = performance.now();
     function drawFrame() {
+      const now = performance.now();
+      const frameTimeActual = now - timeStamp;
+      const frameTimeOffset = frameTimeActual / frameTimeSixtyFps;
+      const frameTimeSnakeSpeed = snakeSpeed * frameTimeOffset;
+      const frameTimeTurnRadius = turnRadius * frameTimeOffset;
+      timeStamp = now;
       for (const snake of snakes) {
-        moveSnake(snake, checkCollision);
+        moveSnake(
+          snake,
+          frameTimeSnakeSpeed,
+          frameTimeTurnRadius,
+          checkCollision
+        );
       }
       checkCollision = !checkCollision;
       !stopped && requestAnimationFrame(drawFrame);
@@ -114,14 +133,19 @@ export default function createSnakeCanvas(
       stopped = false;
     }
   }
+  function stop() {
+    stopped = true;
+  }
 
   return {
     run,
-    stop() {
-      stopped = true;
-    },
+    stop,
     snakeTurners: snakes.map(snake => (turn: number) => {
       snake.turn = turn;
-    })
+    }),
+    destroy() {
+      stop();
+      container.removeChild(canvas);
+    }
   };
 }

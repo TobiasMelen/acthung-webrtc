@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import Game from "./lobby/Game";
 import Client from "./client/Client";
 import LobbyConnection from "./connection/LobbyConnection";

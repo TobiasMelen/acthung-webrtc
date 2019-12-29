@@ -2,9 +2,15 @@ import Game from "./Game";
 import LobbyLayout, { LobbyContent } from "./LobbyLayout";
 import { MainHeading, SubHeading } from "../Layout";
 import QrCode from "../QrCode";
-import React from "react";
+import React, { CSSProperties } from "react";
 
 type Props = Parameters<typeof Game>[0] & { url: string };
+
+const horizontalGridStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "row",
+  justifyContent: "center"
+};
 
 export default function Waiting({ url, players }: Props) {
   return (
@@ -16,6 +22,15 @@ export default function Waiting({ url, players }: Props) {
         <SubHeading>
           <span style={{ textDecoration: "underline" }}>{url}</span>
         </SubHeading>
+        <div style={horizontalGridStyle}>
+        {players.map(player => (
+          <div style={{ width: "25%" }}>
+            <SubHeading style={{ color: player.color }}>
+              {player.name}
+            </SubHeading>
+          </div>
+        ))}
+      </div>
       </LobbyContent>
     </LobbyLayout>
   );

@@ -2,8 +2,7 @@ import { useState, useMemo } from "react";
 import { PlayerState } from "../connection/commonConnections";
 import { ClientConnections } from "../connection/LobbyConnection";
 import useEffectWithDeps from "../useEffectWithDeps";
-
-const allColors = ["#0f0", "#f00", "#00f", "#ff0", "#f0f", "#0ff", "#fff"];
+import { ALL_COLORS } from "../constants";
 
 type PlayerStates = { [id: string]: PlayerState };
 
@@ -13,7 +12,7 @@ type PlayerFunctions = {
   onTurnInput(callBack: (turn: number) => void): void;
 };
 
-export type LobbyPlayer = PlayerState & PlayerFunctions;
+export type LobbyPlayer = PlayerState & PlayerFunctions & { id: string };
 
 type Props = {
   clientConnections: ClientConnections;
@@ -58,7 +57,7 @@ export default function Lobby({ clientConnections, children }: Props) {
               acc,
               playerStates
             );
-            const assignedColor = allColors.find(checkColorAvailability);
+            const assignedColor = ALL_COLORS.find(checkColorAvailability);
             if (assignedColor != null) {
               acc[connKey] = {
                 name: `Player ${index + 1}`,
@@ -139,6 +138,7 @@ export default function Lobby({ clientConnections, children }: Props) {
   const players = useMemo<LobbyPlayer[]>(
     () =>
       playerKeys.map(key => ({
+        id: key,
         ...playerStates[key],
         ...playerFunctions[key]
       })),

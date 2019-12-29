@@ -1,12 +1,13 @@
 import io from "socket.io-client";
 import { useMemo, useEffect, useState } from "react";
+import { SIGNALING_URL } from "../constants";
 
 type ConnectionStatus = "connecting" | "connected" | "error";
 
 export default function useSignalClient(opts?: SocketIOClient.ConnectOpts) {
   const client = useMemo(
     () =>
-      io(process.env.SIGNAL_URL, {
+      io(SIGNALING_URL, {
         transports: ["websocket"],
         autoConnect: false,
         ...opts

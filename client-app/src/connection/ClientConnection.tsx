@@ -1,27 +1,23 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   createRTCPeerConnection,
   createSignalClient,
   ClientMessage,
   LobbyMessage,
-  ConnectionListener,
-  ConnectionDispatch,
-  createChannelHandles
+  createChannelHandles,
+  Connection
 } from "./commonConnections";
-import uuid from "uuid/v1";
+import uuid from "uuid/v4";
 
-export type LobbyConnection = {
-  send: ConnectionDispatch<ClientMessage>;
-  on: ConnectionListener<LobbyMessage>;
-};
+export type ConnectionToLobby = Connection<ClientMessage, LobbyMessage>;
 
 type Props = {
   lobbyName: string;
-  children(connection?: LobbyConnection): JSX.Element;
+  children(connection?: ConnectionToLobby): JSX.Element;
 };
 
 export default function ClientConnection({ lobbyName, children }: Props) {
-  const [lobbyConnection, setLobbyConnection] = useState<LobbyConnection>();
+  const [lobbyConnection, setLobbyConnection] = useState<ConnectionToLobby>();
   //Create id on client session to support reconnecting. This will be a secret between server/client.
   const clientId = useMemo(() => {
     const key = `clientId/${lobbyName}`;
@@ -48,30 +44,16 @@ export default function ClientConnection({ lobbyName, children }: Props) {
     signalClient.on("connect", async () => {
       const peerConnection = createRTCPeerConnection();
 
-      let channelPingInterval: number | undefined;
       const channel = peerConnection.createDataChannel("Client data channel", {
         maxRetransmits: 0,
         protocol: "json",
-        ordered: false,
-        negotiated: false
+        ordered: false
       });
       channel.onopen = () => {
         const handles = createChannelHandles<ClientMessage, LobbyMessage>(
           channel
         );
         setLobbyConnection(handles);
-        //This is messed up, but by keeping sending ping packages over the channel, latency is keeped consistent and low.
-        //If nothing is sent for a couple of deciseconds, latency will start to vary wildly.
-        //This might have to do with my router (known to be shitty in the past)
-        channelPingInterval = window.setInterval(() => {
-          handles.send({
-            type: "ping",
-            data: { timeStamp: performance.now() }
-          });
-        }, 100);
-      };
-      channel.onclose = () => {
-        clearInterval(channelPingInterval);
       };
 
       peerConnection.onicecandidate = event => {
@@ -87,7 +69,7 @@ export default function ClientConnection({ lobbyName, children }: Props) {
           case "completed": {
             //Connection has been made. No need to keep the connection the signal server open.
             //(Hopefully webrtc won't try to send more candidates)
-            signalClient.disconnect();
+            //signalClient.disconnect();
             break;
           }
           case "disconnected": {

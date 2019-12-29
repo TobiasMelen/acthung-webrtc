@@ -1,4 +1,5 @@
 import io from "socket.io-client";
+import { SIGNALING_URL } from "../constants";
 
 export type ConnectionDispatch<MessageType> = (message: MessageType) => void;
 export type ConnectionListener<MessageType extends { type: string }> = <
@@ -7,6 +8,12 @@ export type ConnectionListener<MessageType extends { type: string }> = <
   messageType: TKey,
   handler: (data: MessageData<MessageType, TKey>) => void
 ) => void;
+
+
+export type Connection<TSend extends { type: string }, TRecieve extends { type: string }> = {
+  send: ConnectionDispatch<TSend>;
+  on: ConnectionListener<TRecieve>;
+};
 
 export type MessageData<MessageType, TKey> = MessageType extends {
   type: TKey;
@@ -24,7 +31,7 @@ export type PlayerState = {
   latency: number;
 };
 
-type Ping = { type: "ping"; data: { timeStamp: number } };
+export type Ping = { type: "ping"; data: { timeStamp: number } };
 
 export type LobbyMessage =
   | { type: "playerState"; data: PlayerState }
@@ -40,12 +47,7 @@ export type ClientMessage =
 
 export function createSignalClient(opts: SocketIOClient.ConnectOpts) {
   return io(
-    process.env.SIGNAL_URL ??
-      (() => {
-        throw new Error(
-          "SIGNAL_URL for signaling server must be specified in env."
-        );
-      })(),
+    SIGNALING_URL, 
     {
       transports: ["websocket"],
       ...opts
