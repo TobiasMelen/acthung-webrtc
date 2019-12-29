@@ -82,6 +82,7 @@ export default function ClientConnection({ lobbyName, children }: Props) {
           }
           case "failed": {
             setLobbyConnection(undefined);
+            alert(`failed ${peerConnection.connectionState} ${peerConnection.idpErrorInfo}` )
             break;
           }
         }
