@@ -4,7 +4,7 @@ export default function useEffectWithDeps<Deps extends DependencyList>(
   effect: (prevDeps?: Deps) => ReturnType<EffectCallback>,
   deps: Deps
 ) {
-  const dependencyRef = useRef<Deps>();
+  const dependencyRef = useRef<Readonly<Deps>>();
   useEffect(() => {
     const prevDeps = dependencyRef.current;
     dependencyRef.current = deps;

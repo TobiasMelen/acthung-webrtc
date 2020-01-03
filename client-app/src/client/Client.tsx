@@ -1,6 +1,4 @@
-import ClientDataChannel, {
-  ConnectionToLobby
-} from "../connection/ClientConnection";
+import ClientDataChannel from "../connection/ClientConnection";
 import React, {
   useMemo,
   useState,
@@ -11,41 +9,41 @@ import React, {
   useRef
 } from "react";
 import SnakeControls from "./PlayerUI";
-import { PlayerState, MessageData } from "../connection/commonConnections";
+import {
+  PlayerState,
+  GameState
+} from "../connection/commonConnections";
 import usePingLatency from "./usePingLatency";
 import PlayerLayout from "./PlayerLayout";
 import Input from "./Input";
 import { SubHeading, MainHeading } from "../Layout";
-import {
-  ALL_COLORS,
-  DEFAULT_COLOR,
-  DEFAULT_FONT_FAMILY_MONOSPACE
-} from "../constants";
 import Button from "../Button";
+import { MessageChannelToLobby } from "../messaging/dataChannelMessaging";
 
 type Props = {
   lobbyName: string;
 };
 
-type SendType = Parameters<ConnectionToLobby["send"]>[0];
+type SendType = Parameters<MessageChannelToLobby["send"]>[0];
 
 type ClientPlayer = ReturnType<ReturnType<typeof createPlayerFunctions>> &
   PlayerState & { latency: number };
 
 const createPlayerFunctions = (
   setPlayerState: Dispatch<SetStateAction<PlayerState | undefined>>,
-  connection?: ConnectionToLobby
+  connection?: MessageChannelToLobby
 ) => () => {
-  const sender = <TKey extends SendType["type"]>(
+  const sender = <TKey extends SendType>(
     type: TKey,
     stateKey?: keyof PlayerState
-  ) => (data: MessageData<SendType, TKey>) => {
+  ) => (data: any) => {
     //Optimistic updates if statekey provided
     stateKey &&
       setPlayerState(state => state && { ...state, [stateKey]: data });
     connection?.send(
       //@ts-ignore Come-on typescript, be the haskell of my dreams
-      { type, data }
+      type,
+      data
     );
   };
   return {
@@ -60,16 +58,31 @@ function PlayerCreator({
   connection,
   children
 }: {
-  connection?: ConnectionToLobby;
-  children: (player?: ClientPlayer) => JSX.Element;
+  connection?: MessageChannelToLobby;
+  children: (player?: ClientPlayer, gameState?: GameState) => JSX.Element;
 }) {
   const latency = usePingLatency(connection);
   const [playerState, setPlayerState] = useState<PlayerState>();
+  const [gameState, setGameState] = useState<GameState>();
   useEffect(() => {
     if (connection == null) {
       return;
     }
-    connection.on("playerState", setPlayerState);
+
+    connection.on("playerState", update =>
+      setPlayerState(
+        state =>
+          //assign undefined to the stateupdate and die.
+          ({ ...state, ...update } as PlayerState)
+      )
+    );
+    connection.on("gameState", update =>
+      setGameState(
+        state =>
+          //same here.
+          ({ ...state, ...update } as GameState)
+      )
+    );
   }, [connection]);
 
   const playerFunctions = useMemo(
@@ -77,7 +90,8 @@ function PlayerCreator({
     [connection]
   );
   return children(
-    playerState && { ...playerState, ...playerFunctions, latency }
+    playerState && { ...playerState, ...playerFunctions, latency },
+    gameState
   );
 }
 
@@ -87,7 +101,7 @@ export default function Client({ lobbyName = "new" }: Props) {
       <ClientDataChannel lobbyName={lobbyName}>
         {channel => (
           <PlayerCreator connection={channel}>
-            {player => {
+            {(player, gameState) => {
               if (player == null) {
                 return <h1>Connecting</h1>;
               }
@@ -96,7 +110,10 @@ export default function Client({ lobbyName = "new" }: Props) {
                   return player.ready ? (
                     <h1>Waiting</h1>
                   ) : (
-                    <EnterCreds {...player} />
+                    <EnterCreds
+                      {...player}
+                      colors={gameState?.colorAvailability}
+                    />
                   );
                 case "playing":
                   return (
@@ -117,7 +134,10 @@ export default function Client({ lobbyName = "new" }: Props) {
   );
 }
 
-function EnterCreds(props: ClientPlayer) {
+function EnterCreds({
+  colors = {},
+  ...props
+}: ClientPlayer & { colors?: GameState["colorAvailability"] }) {
   const [hasInput, setHasInput] = useState(false);
   const hasDefaultName = !hasInput && props.name.startsWith("Player ");
   const onChangeInput = useCallback(
@@ -158,25 +178,37 @@ function EnterCreds(props: ClientPlayer) {
             justifyContent: "center"
           }}
         >
-          {ALL_COLORS.map(color => (
-            <figure
-              onClick={() => props.setColor(color)}
-              style={{
-                boxSizing: "border-box",
-                width: 50,
-                height: 50,
-                margin: 15,
-                borderRadius: "50%",
-                background: color,
-                transform: color === props.color ? "scale(1.2)" : undefined,
-                transition: "transform 150ms ease-out, border 150ms ease-out",
-                border:
-                  color === props.color ? `5px solid ${DEFAULT_COLOR}` : "none"
-              }}
-            >
-              <figcaption style={{ visibility: "hidden" }}>{color}</figcaption>
-            </figure>
-          ))}
+          {Object.entries(colors).map(([color, available]) => {
+            const isPlayerColor = color === props.color;
+            return (
+              <figure
+                key={color}
+                onClick={() => available && props.setColor(color)}
+                style={{
+                  boxSizing: "border-box",
+                  width: 50,
+                  height: 50,
+                  margin: 15,
+                  borderRadius: "50%",
+                  background: color,
+                  transform:
+                    isPlayerColor || !available
+                      ? `scale(${isPlayerColor ? 1.2 : 0.8})`
+                      : undefined,
+                  transition:
+                    "transform 150ms ease-out, box-shadow 150ms ease-out, opacity 75ms ease-out",
+                  opacity: isPlayerColor || available ? 1 : 0.2,
+                  boxShadow: isPlayerColor
+                    ? "inset 0 0 0 5px rgba(0,0,0,0.1)"
+                    : "none"
+                }}
+              >
+                <figcaption style={{ visibility: "hidden" }}>
+                  {color}
+                </figcaption>
+              </figure>
+            );
+          })}
         </section>
         {/* {props.latency != 0 && (
           <section style={{fontWeight: 900, margin: "1em 0"}}>

@@ -23,7 +23,7 @@ export default function Game(props: Props) {
       return;
     }
     if (players.length && players.every(player => player.ready)) {
-      countdown.start(1);
+      countdown.start(5);
       countdown.onDone(() => {
         players.forEach(player => player.setState("playing"));
         setGameState({

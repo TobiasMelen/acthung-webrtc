@@ -1,23 +1,19 @@
 import { useEffect, useState, useMemo } from "react";
 import {
   createRTCPeerConnection,
-  createSignalClient,
-  ClientMessage,
-  LobbyMessage,
-  createChannelHandles,
-  Connection
+  createSignalClient
 } from "./commonConnections";
 import uuid from "uuid/v4";
+import { MessageChannelToLobby, createMessageChannelToLobby } from "../messaging/dataChannelMessaging";
 
-export type ConnectionToLobby = Connection<ClientMessage, LobbyMessage>;
 
 type Props = {
   lobbyName: string;
-  children(connection?: ConnectionToLobby): JSX.Element;
+  children(connection?: MessageChannelToLobby): JSX.Element;
 };
 
 export default function ClientConnection({ lobbyName, children }: Props) {
-  const [lobbyConnection, setLobbyConnection] = useState<ConnectionToLobby>();
+  const [lobbyMessageChannel, setLobbyMessageChannel] = useState<MessageChannelToLobby>();
   //Create id on client session to support reconnecting. This will be a secret between server/client.
   const clientId = useMemo(() => {
     const key = `clientId/${lobbyName}`;
@@ -30,7 +26,7 @@ export default function ClientConnection({ lobbyName, children }: Props) {
   }, [lobbyName]);
 
   useEffect(() => {
-    if (lobbyConnection != null) {
+    if (lobbyMessageChannel != null) {
       return;
     }
 
@@ -50,15 +46,17 @@ export default function ClientConnection({ lobbyName, children }: Props) {
         ordered: false
       });
       channel.onopen = () => {
-        const handles = createChannelHandles<ClientMessage, LobbyMessage>(
-          channel
-        );
-        setLobbyConnection(handles);
+        const handles = createMessageChannelToLobby(channel);
+        setLobbyMessageChannel(handles);
       };
 
       peerConnection.onicecandidate = event => {
         if (event.candidate != null) {
-          signalClient.send({ to: lobbyName, from: clientId, data: event.candidate.toJSON() });
+          signalClient.send({
+            to: lobbyName,
+            from: clientId,
+            data: event.candidate.toJSON()
+          });
         }
       };
       let peerDisconnectTimeout: number | undefined;
@@ -75,14 +73,16 @@ export default function ClientConnection({ lobbyName, children }: Props) {
           case "disconnected": {
             //Give this weirdly documented state 500ms to recover before trying a reconnect from scratch;
             peerDisconnectTimeout = window.setTimeout(
-              () => setLobbyConnection(undefined),
+              () => setLobbyMessageChannel(undefined),
               500
             );
             break;
           }
           case "failed": {
-            setLobbyConnection(undefined);
-            alert(`failed ${peerConnection.connectionState} ${peerConnection.idpErrorInfo}` )
+            setLobbyMessageChannel(undefined);
+            alert(
+              `failed ${peerConnection.connectionState} ${peerConnection.idpErrorInfo}`
+            );
             break;
           }
         }
@@ -99,7 +99,7 @@ export default function ClientConnection({ lobbyName, children }: Props) {
         }
       });
     });
-  }, [lobbyConnection, lobbyName]);
+  }, [lobbyMessageChannel, lobbyName]);
 
-  return children(lobbyConnection);
+  return children(lobbyMessageChannel);
 }

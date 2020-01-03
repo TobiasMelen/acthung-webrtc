@@ -110,8 +110,7 @@ export default function createSnakeCanvas(
   function run() {
     let checkCollision = true;
     let timeStamp = performance.now();
-    function drawFrame() {
-      const now = performance.now();
+    function drawFrame(now: number) {
       const frameTimeActual = now - timeStamp;
       const frameTimeOffset = frameTimeActual / frameTimeSixtyFps;
       const frameTimeSnakeSpeed = snakeSpeed * frameTimeOffset;

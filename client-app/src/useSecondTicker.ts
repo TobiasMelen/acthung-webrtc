@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useMemo } from "react";
 
 export default function useSecondTicker(seconds: number = 0) {
   // This is one confused hook bonanza.
-  // When your second counter is more advanced than your client udp connection you should stop coding.
+  // When your second counter is more advanced than your udp connection manager you should stop coding.
   const [secondsLeft, setSecondsLeft] = useState(seconds);
   const ticker = useRef<number>();
   const tickCallback = useRef((secondsLeft: number) => {});

@@ -1,26 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ClientMessage,
-  ConnectionDispatch,
-  ConnectionListener,
-  createChannelHandles,
-  createRTCPeerConnection,
-  LobbyMessage
+  createRTCPeerConnection
 } from "./commonConnections";
 import useSignalClient from "./useSignalClient";
+import { createMessageChannelToPlayer, MessageChannelToPlayer } from "../messaging/dataChannelMessaging";
 
-export type ClientConnection = {
-  send: ConnectionDispatch<LobbyMessage>;
-  on: ConnectionListener<ClientMessage>;
-};
-
-export type ClientConnections = {
-  [id: string]: ClientConnection;
+export type PlayerConnections = {
+  [id: string]: MessageChannelToPlayer;
 };
 
 type Props = {
   lobbyName: string;
-  children: (clientConnections: ClientConnections) => JSX.Element;
+  children: (clientConnections: PlayerConnections) => JSX.Element;
 };
 
 type OfferMessage = { from?: string; data: RTCSessionDescriptionInit };
@@ -28,7 +19,7 @@ type OfferMessage = { from?: string; data: RTCSessionDescriptionInit };
 type CandidateMessage = { from?: string; data: RTCIceCandidateInit | {} };
 
 export default function LobbyConnection({ lobbyName, children }: Props) {
-  const [clientConnections, setClientConnections] = useState<ClientConnections>(
+  const [clientConnections, setClientConnections] = useState<PlayerConnections>(
     {}
   );
 
@@ -50,11 +41,11 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
           Object.keys(connections).reduce((acc, key) => {
             key !== id && acc[key] == connections.key;
             return acc;
-          }, {} as ClientConnections)
+          }, {} as PlayerConnections)
         );
       setClientConnections(connections => ({
         ...connections,
-        [id]: createChannelHandles(channel, ["ping"])
+        [id]: createMessageChannelToPlayer(channel)
       }));
     },
     [setClientConnections]

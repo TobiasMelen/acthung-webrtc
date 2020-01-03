@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { PlayerState } from "../connection/commonConnections";
-import { ClientConnections } from "../connection/LobbyConnection";
+import { PlayerState, GameState } from "../connection/commonConnections";
+import { PlayerConnections } from "../connection/LobbyConnection";
 import useEffectWithDeps from "../useEffectWithDeps";
 import { ALL_COLORS } from "../constants";
+import { extractObjectDiff, typedEntries } from "../utility";
 
 type PlayerStates = { [id: string]: PlayerState };
 
@@ -15,16 +16,9 @@ type PlayerFunctions = {
 export type LobbyPlayer = PlayerState & PlayerFunctions & { id: string };
 
 type Props = {
-  clientConnections: ClientConnections;
+  clientConnections: PlayerConnections;
   children(players: LobbyPlayer[]): JSX.Element;
 };
-
-function createColorAvailabilityChecker(...collections: PlayerStates[]) {
-  return (color: string) =>
-    collections.every(collection =>
-      Object.keys(collection).every(key => collection[key].color !== color)
-    );
-}
 
 /*
  * The Lobby component is responsible for converting webrtc channels into player objects with state and client messaging.
@@ -39,11 +33,18 @@ export default function Lobby({ clientConnections, children }: Props) {
     }));
 
   const [playerStates, setPlayerState] = useState<PlayerStates>({});
-
+  const [gameState, setGameState] = useState<GameState>({
+    colorAvailability: ALL_COLORS.reduce((acc, color) => {
+      acc[color] = true;
+      return acc;
+    }, {} as { [color: string]: boolean })
+  });
   //Create players from connections
   useEffectWithDeps(
     prevDeps => {
       const [prevConnections] = prevDeps ?? [{}];
+      //if we get new players, we should update colors.
+      let updatedColorAvailability: typeof gameState["colorAvailability"];
       setPlayerState(playerStates => {
         let queuespot = 1;
         return Object.keys(clientConnections).reduce((acc, connKey, index) => {
@@ -52,13 +53,15 @@ export default function Lobby({ clientConnections, children }: Props) {
             //Connection already assigned player
             acc[connKey] = prevPlayerState;
           } else {
+            updatedColorAvailability = updatedColorAvailability ?? {
+              ...gameState.colorAvailability
+            };
             //Create new player if color can be assigned.
-            const checkColorAvailability = createColorAvailabilityChecker(
-              acc,
-              playerStates
-            );
-            const assignedColor = ALL_COLORS.find(checkColorAvailability);
+            const assignedColor = Object.entries(updatedColorAvailability).find(
+              ([_color, avail]) => avail
+            )?.[0];
             if (assignedColor != null) {
+              updatedColorAvailability[assignedColor] = false;
               acc[connKey] = {
                 name: `Player ${index + 1}`,
                 color: assignedColor,
@@ -68,13 +71,16 @@ export default function Lobby({ clientConnections, children }: Props) {
                 latency: 0
               };
             } else {
-              clientConnections[connKey].send({
-                type: "err",
-                data: { reason: "lobbyFull", queuespot }
+              clientConnections[connKey].send("err", {
+                reason: "lobbyFull",
+                queuespot
               });
               queuespot++;
             }
           }
+          //if colors where updated by new player creation set this to gamestate
+          updatedColorAvailability &&
+            setGameState({ colorAvailability: updatedColorAvailability });
           //Wire or re-wire player message handlers
           const currentConnection = clientConnections[connKey];
           if (
@@ -82,9 +88,24 @@ export default function Lobby({ clientConnections, children }: Props) {
             currentConnection !== prevConnections[connKey]
           ) {
             const modifyPlayer = createPlayerModifier(connKey);
-            currentConnection.on("setColor", color =>
-              modifyPlayer(player => ({ ...player, color }))
-            );
+            currentConnection.on("setColor", color => {
+              //only accept existing, non assigned, colors
+              if (gameState.colorAvailability[color]) {
+                modifyPlayer(player => {
+                  //assign selected color in gamestate, nesting setStates like an outlaw
+                  //this should probably be another reactive effect, but come on.
+                  setGameState(state => ({
+                    ...state,
+                    colorAvailability: {
+                      ...state.colorAvailability,
+                      [player.color]: true,
+                      [color]: false
+                    }
+                  }));
+                  return { ...player, color };
+                });
+              }
+            });
             currentConnection.on("setName", name => {
               modifyPlayer(player => ({ ...player, name }));
             });
@@ -99,21 +120,52 @@ export default function Lobby({ clientConnections, children }: Props) {
     [clientConnections] as const
   );
 
-  //Report any changes in playerstate to client
+  //Report individual playerstates to clients
   useEffectWithDeps(
     prevDeps => {
       const [prevClientConnections, prevPlayerStates] = prevDeps ?? [];
       Object.keys(playerStates).forEach(key => {
         const newState = playerStates[key];
+        const oldState = prevPlayerStates?.[key];
+        //send complete state if connection changed or state is new
         if (
-          newState != prevPlayerStates?.[key] ||
-          clientConnections[key] != prevClientConnections?.[key]
+          clientConnections[key] != prevClientConnections?.[key] ||
+          oldState == null
         ) {
-          clientConnections[key]?.send({ type: "playerState", data: newState });
+          clientConnections[key]?.send("playerState", newState);
+        }
+        //send partial state updates to existing connections
+        else if (newState !== oldState) {
+          clientConnections[key]?.send(
+            "playerState",
+            extractObjectDiff(oldState, newState)
+          );
         }
       });
     },
     [clientConnections, playerStates] as const
+  );
+
+  //Report gamestate to clients
+  useEffectWithDeps(
+    prevDeps => {
+      const [prevClientConnections, prevGameState] = prevDeps ?? [];
+      const stateUpdate =
+        prevGameState !== gameState &&
+        extractObjectDiff(prevGameState, gameState);
+      Object.keys(clientConnections).forEach(id => {
+        const currentConn = clientConnections[id];
+        //Send complete state to new/updated connections
+        if (currentConn != prevClientConnections?.[id]) {
+          currentConn?.send("gameState", gameState);
+        }
+        //Otherwise send updated state keys only
+        else if (stateUpdate) {
+          currentConn?.send("gameState", stateUpdate);
+        }
+      });
+    },
+    [clientConnections, gameState] as const
   );
 
   //Create player handler functions in a seperate memo to prevent too much closure generation on score changes.
