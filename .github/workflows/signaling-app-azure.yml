@@ -22,5 +22,5 @@ jobs:
       uses: azure/webapps-deploy@v1
       with: 
         app-name: snake-signals
-        package: dist
+        package: signaling-app/dist
         publish-profile: ${{ secrets.AZURE_DEPLOYMENT_PROFILE }}
