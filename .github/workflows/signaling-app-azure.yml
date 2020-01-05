@@ -17,8 +17,6 @@ jobs:
         cd signaling-app
         yarn install
         yarn build
-        cd dist
-        gcloud app deploy --project=light-footing-262920
     
     - name: 'Run Azure webapp deploy action using publish profile credentials'
       uses: azure/webapps-deploy@v1
