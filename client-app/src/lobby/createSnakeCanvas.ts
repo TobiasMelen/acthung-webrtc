@@ -1,4 +1,5 @@
 export type SnakeInput = {
+  id: string;
   color: string;
   onCollision: () => void;
 };
@@ -9,13 +10,14 @@ export default function createSnakeCanvas(
   container: HTMLElement,
   snakeInputs: SnakeInput[],
   {
-    snakeSpeed = 1.5,
-    snakeRadius = 3.5,
-    turnRadius = 0.045,
+    snakeSpeed = 2,
+    lineWidth = 10,
+    turnRadius = 0.04,
     startPositionSpread = 0.5,
     borderColor = "#fff",
-    chanceToBecomeAHole = 0.01,
-    holeDuration = 20
+    chanceToBecomeAHole = 0.0001,
+    holeDuration = 15,
+    maxVerticalResolution = 1080
   } = {}
 ) {
   //Create scaled canvas for rendering
@@ -23,22 +25,29 @@ export default function createSnakeCanvas(
   container.appendChild(canvas);
   canvas.style.height = "100%";
   canvas.style.width = "100%";
-  canvas.height = container.clientHeight;
-  canvas.width = container.clientWidth;
+  if (container.clientHeight > maxVerticalResolution) {
+    canvas.height = maxVerticalResolution;
+    canvas.width =
+      (maxVerticalResolution / container.clientHeight) * container.clientWidth;
+  } else {
+    canvas.height = container.clientHeight;
+    canvas.width = container.clientWidth;
+  }
   const context =
     canvas.getContext("2d") ??
     (() => {
       throw new Error("Could not get Snake canvas 2d context");
     })();
-  // const shortestAxis =
-  //   canvas.height > canvas.width ? canvas.height : canvas.width;
-  // const scaleFactor = shortestAxis;
-  // context.scale(canvas.width / scaleFactor, canvas.height / scaleFactor);
+  if (canvas.height > maxVerticalResolution) {
+    const scaleFactor = canvas.height / maxVerticalResolution;
+    context.scale(scaleFactor, scaleFactor);
+  }
+  context.globalCompositeOperation = "destination-over";
 
   //Draw border
   context.beginPath();
   context.strokeStyle = borderColor;
-  const borderThickness = snakeRadius * 2;
+  const borderThickness = lineWidth;
   context.lineWidth = borderThickness;
   context.strokeRect(
     borderThickness / 2,
@@ -49,12 +58,11 @@ export default function createSnakeCanvas(
   context.stroke();
   context.closePath();
 
-  //Create stateful snake objects
-  const snakes = snakeInputs.map(input => ({
-    ...input,
+  const createNewSnake = () => ({
     hasCollided: false,
     turn: 0,
     direction: Math.round(Math.random() * 360),
+    holeChance: chanceToBecomeAHole,
     position: {
       x:
         (Math.random() + startPositionSpread) *
@@ -64,8 +72,19 @@ export default function createSnakeCanvas(
         (context.canvas.height * startPositionSpread)
     },
     currentHoleSection: 0,
-    erasePath: null as null | { x: number; y: number }
-  }));
+    erasePos: null as null | { x: number; y: number }
+  });
+
+  const snakes: (ReturnType<typeof createNewSnake> & SnakeInput)[] = [];
+
+  //Create or update snake and return turntrigger
+  const inputSnakeData = (input: SnakeInput) => {
+    let index =
+      snakeInputs.findIndex(snake => snake.id === input.id) ?? snakes.length;
+    const snake = { ...(snakes[index] ?? createNewSnake()), ...input };
+    snakes[index] = snake;
+    return (turn: number) => (snake.turn = turn);
+  };
 
   //function for colliding and drawing snake
   function moveSnake(
@@ -77,30 +96,57 @@ export default function createSnakeCanvas(
     if (snake.hasCollided) {
       return;
     }
+    if (snake.currentHoleSection == 0) {
+      if (snake.holeChance > 0.001 && Math.random() < snake.holeChance) {
+        snake.currentHoleSection = holeDuration;
+        snake.holeChance = chanceToBecomeAHole;
+      } else {
+        snake.holeChance = snake.holeChance + chanceToBecomeAHole;
+      }
+    }
 
     const willCollide =
       checkCollision &&
       context.getImageData(
         snake.position.x +
-          (snakeSpeed + 4) * Math.cos(snake.direction),
+          (snakeSpeed + lineWidth / 2) * Math.cos(snake.direction),
         snake.position.y +
-          (snakeSpeed + 4) * Math.sin(snake.direction),
+          (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
         1,
         1
       ).data[3] !== 0;
     if (willCollide) {
-      snake.onCollision();
       snake.hasCollided = true;
+      snake.onCollision();
+    }
+
+    if (snake.erasePos != null) {
+      context.beginPath();
+      context.lineCap = "square";
+      context.lineWidth = lineWidth + 3;
+      const prevCompOp = context.globalCompositeOperation;
+      context.globalCompositeOperation = "destination-out";
+      context.moveTo(snake.erasePos.x, snake.erasePos.y);
+      context.lineTo(snake.position.x, snake.position.y);
+      context.stroke();
+      context.closePath();
+      snake.erasePos = null;
+      context.globalCompositeOperation = prevCompOp;
+    }
+
+    if (snake.currentHoleSection > 0) {
+      snake.erasePos = { ...snake.position };
+      snake.currentHoleSection--;
     }
 
     context.beginPath();
     context.lineCap = "square";
-    context.lineWidth = snakeRadius * 2;
+    context.lineWidth = lineWidth;
+    context.strokeStyle = snake.color;
     context.moveTo(snake.position.x, snake.position.y);
     snake.direction += snake.turn * turnAngle;
     snake.position.x += snakeSpeed * Math.cos(snake.direction);
     snake.position.y += snakeSpeed * Math.sin(snake.direction);
-    context.strokeStyle = snake.color;
     context.lineTo(snake.position.x, snake.position.y);
     context.stroke();
     context.closePath();
@@ -112,7 +158,9 @@ export default function createSnakeCanvas(
     let timeStamp = performance.now();
     function drawFrame(now: number) {
       const frameTimeActual = now - timeStamp;
-      const frameTimeOffset = frameTimeActual / frameTimeSixtyFps;
+      let frameTimeOffset = frameTimeActual / frameTimeSixtyFps;
+      //Don't skip too far if we're lagging.
+      frameTimeOffset = frameTimeOffset < 4 ? frameTimeOffset : 4;
       const frameTimeSnakeSpeed = snakeSpeed * frameTimeOffset;
       const frameTimeTurnRadius = turnRadius * frameTimeOffset;
       timeStamp = now;
@@ -139,9 +187,7 @@ export default function createSnakeCanvas(
   return {
     run,
     stop,
-    snakeTurners: snakes.map(snake => (turn: number) => {
-      snake.turn = turn;
-    }),
+    inputSnakeData,
     destroy() {
       stop();
       container.removeChild(canvas);

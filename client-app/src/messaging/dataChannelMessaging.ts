@@ -5,7 +5,6 @@ import {
   numberConverter
 } from "./valueConverters";
 import setupMessageChannel, { Converter } from "./setupMessageChannel";
-import { PlayerState, GameState } from "../connection/commonConnections";
 
 const messagesFromLobby = {
   playerState: jsonConverter as Converter<Partial<PlayerState>>,
@@ -43,7 +42,7 @@ export function createMessageChannelToLobby(dataChannel: RTCDataChannel) {
 
 function setupMessageDataChannel(dataChannel: RTCDataChannel) {
   return setupMessageChannel({
-    send: dataChannel.send,
+    send: (msg) => dataChannel.readyState === "open" && dataChannel.send(msg),
     triggerReceive(trigger) {
       dataChannel.addEventListener("message", ev => trigger(ev.data));
     }

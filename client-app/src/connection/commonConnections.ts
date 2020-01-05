@@ -1,18 +1,7 @@
 import io from "socket.io-client";
 import { SIGNALING_URL } from "../constants";
 
-export type PlayerState = {
-  name: string;
-  color: string;
-  score: number;
-  ready: boolean;
-  state: "joining" | "playing" | "dead";
-  latency: number;
-};
 
-export type GameState = {
-  colorAvailability: { [color: string]: boolean };
-};
 
 export function createSignalClient(opts: SocketIOClient.ConnectOpts) {
   return io(SIGNALING_URL, {

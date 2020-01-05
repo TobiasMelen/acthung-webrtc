@@ -1,0 +1,12 @@
+import Banger from "../../Banger";
+import React from "react";
+
+export const title = "Banger";
+
+export const props = {
+  content: "prepare"
+};
+
+export default function BangerPreview({ content }: typeof props) {
+  return <Banger startingEm={30}>{content}</Banger>;
+}

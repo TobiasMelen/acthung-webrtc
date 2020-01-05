@@ -13,7 +13,6 @@ const containerMediaStyle: MediaQueryMatch<CSSProperties> = {
   "(orientation: landscape)": {
     flexDirection: "row",
     height: "100vh",
-    maxWidth: 700,
     margin: "0 auto"
   },
   "(orientation: portrait)": {

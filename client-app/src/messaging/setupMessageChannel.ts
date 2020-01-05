@@ -44,7 +44,7 @@ export type MessageChannel<
 };
 
 //HoF just to cut down on TS generic bloat.
-export default function setupMessageChannel<TExtraSendParams extends any[] = []>(hooks: EventHooks<TExtraSendParams>) {
+export default function setupMessageChannel<TExtraSendParams extends any[] = []>(channelHooks: EventHooks<TExtraSendParams>) {
   return <
     TSend extends ConverterCollection,
     TReceive extends ConverterCollection
@@ -56,7 +56,7 @@ export default function setupMessageChannel<TExtraSendParams extends any[] = []>
     const bounceSet = new Set(bounce);
     const listeners = new Map<keyof TReceive, Function[]>();
     //bind a single event listener to "outer event" and filter on serialized message type.
-    hooks.triggerReceive(input => {
+    channelHooks.triggerReceive(input => {
       const indexOfMessageSeparator = input.indexOf(";");
       const messageType =
         indexOfMessageSeparator && input.substring(0, indexOfMessageSeparator);
@@ -67,7 +67,7 @@ export default function setupMessageChannel<TExtraSendParams extends any[] = []>
       //if this is a configured bounce message, bounce it directly as it came.
       if (bounceSet.has(messageType)) {
         //@ts-ignore no params here
-        hooks.send(input);
+        channelHooks.send(input);
       }
       //check if anyones is listening before parsing message data and invoking listeners.
       const messageListeners = listeners.get(messageType);
@@ -80,7 +80,9 @@ export default function setupMessageChannel<TExtraSendParams extends any[] = []>
     });
     return {
       send(type, data, ...extraParams) {
-        hooks.send(`${type};${send[type].serialize(data)}`, ...extraParams);
+        console.log('sending', data)
+        const message = `${type};${send[type].serialize(data)}`;
+        channelHooks.send(message, ...extraParams);
       },
       on(type, fn) {
         if (!listeners.has(type)) {

@@ -9,16 +9,13 @@ import React, {
   useRef
 } from "react";
 import SnakeControls from "./PlayerUI";
-import {
-  PlayerState,
-  GameState
-} from "../connection/commonConnections";
 import usePingLatency from "./usePingLatency";
 import PlayerLayout from "./PlayerLayout";
 import Input from "./Input";
 import { SubHeading, MainHeading } from "../Layout";
 import Button from "../Button";
 import { MessageChannelToLobby } from "../messaging/dataChannelMessaging";
+import Banger from "../Banger";
 
 type Props = {
   lobbyName: string;
@@ -103,12 +100,12 @@ export default function Client({ lobbyName = "new" }: Props) {
           <PlayerCreator connection={channel}>
             {(player, gameState) => {
               if (player == null) {
-                return <h1>Connecting</h1>;
+                return <Banger>Connecting</Banger>;
               }
               switch (player.state) {
                 case "joining":
                   return player.ready ? (
-                    <h1>Waiting</h1>
+                    <Banger>Waiting</Banger>
                   ) : (
                     <EnterCreds
                       {...player}
@@ -124,7 +121,7 @@ export default function Client({ lobbyName = "new" }: Props) {
                     />
                   );
                 case "dead":
-                  return <h1>You dead</h1>;
+                  return <Banger>You dead</Banger>;
               }
             }}
           </PlayerCreator>
@@ -148,24 +145,17 @@ function EnterCreds({
     [props.setName]
   );
   const inputRef = useRef<HTMLInputElement>(null);
-  // useEffect(() => {
-  //   hasDefaultName && inputRef.current != null && inputRef.current.focus();
-  // }, [hasDefaultName, inputRef.current]);
   return (
-    <>
-      <div />
       <article
         style={{ textAlign: "center", maxWidth: "95%", margin: "auto 0" }}
       >
-        <MainHeading>Welcome!</MainHeading>
-        <SubHeading>Set name and color.</SubHeading>
         <Input
           ref={inputRef}
           style={{ color: props.color, margin: "1em auto", maxWidth: "75%" }}
           value={hasDefaultName ? "" : props.name}
           onChange={onChangeInput}
           placeholder={hasDefaultName ? props.name : ""}
-          maxLength={12}
+          maxLength={10}
           autoCorrect="off"
           spellCheck={false}
         />
@@ -226,7 +216,5 @@ function EnterCreds({
           </Button>
         </section>
       </article>
-      <div />
-    </>
   );
 }

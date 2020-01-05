@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  createRTCPeerConnection
-} from "./commonConnections";
+import { createRTCPeerConnection } from "./commonConnections";
 import useSignalClient from "./useSignalClient";
-import { createMessageChannelToPlayer, MessageChannelToPlayer } from "../messaging/dataChannelMessaging";
+import {
+  createMessageChannelToPlayer,
+  MessageChannelToPlayer
+} from "../messaging/dataChannelMessaging";
 
 export type PlayerConnections = {
   [id: string]: MessageChannelToPlayer;
@@ -34,15 +35,21 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
     )
   );
 
+  const removeConnection = useCallback(
+    (id: string) => {
+      setClientConnections(connections =>
+        Object.keys(connections).reduce((acc, key) => {
+          key !== id && acc[key] == connections.key;
+          return acc;
+        }, {} as PlayerConnections)
+      );
+    },
+    [setClientConnections]
+  );
+
   const onClientDataChannel = useCallback(
     (id: string) => ({ channel }: RTCDataChannelEvent) => {
-      channel.onclose = () =>
-        setClientConnections(connections =>
-          Object.keys(connections).reduce((acc, key) => {
-            key !== id && acc[key] == connections.key;
-            return acc;
-          }, {} as PlayerConnections)
-        );
+      channel.onclose = () => removeConnection(id);
       setClientConnections(connections => ({
         ...connections,
         [id]: createMessageChannelToPlayer(channel)
@@ -66,6 +73,11 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
             to: offerFrom,
             data: event.candidate.toJSON()
           });
+        clientConnection.oniceconnectionstatechange = () => {
+          console.log("connection state changed", clientConnection.iceConnectionState)
+          clientConnection.iceConnectionState === "failed" || clientConnection.iceConnectionState === "disconnected" &&
+            removeConnection(offerFrom);
+        };
         signalClient.on(
           "message",
           ({ from: candidateFrom, data }: CandidateMessage) =>

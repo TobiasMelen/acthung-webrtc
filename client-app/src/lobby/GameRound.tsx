@@ -2,15 +2,18 @@ import createSnakeCanvas, { SnakeInput } from "./createSnakeCanvas";
 import React, { useRef, useEffect, CSSProperties } from "react";
 
 type Props = {
+  run: boolean;
   input: (SnakeInput & {
     onTurnInput(callBack: (turn: number) => void): void;
   })[];
 };
 
 const canvascontainerStyle: CSSProperties = {
-  flexGrow: 1
+  flexGrow: 1,
+  height: "100%",
+  width: "100%"
 };
-export default function SnakeCanvas({ input }: Props) {
+export default function GameRound({ run, input }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<ReturnType<typeof createSnakeCanvas>>();
   useEffect(() => {
@@ -18,17 +21,25 @@ export default function SnakeCanvas({ input }: Props) {
       return;
     }
     const snakeCanvas = createSnakeCanvas(containerRef.current, input);
-    snakeCanvas.run();
     canvasRef.current = snakeCanvas;
     return () => snakeCanvas.destroy();
   }, [containerRef.current]);
   useEffect(() => {
     const snakeCanvas = canvasRef.current;
-    if (snakeCanvas != null) {
-      snakeCanvas.snakeTurners.forEach((turner, index) =>
-        input[index]?.onTurnInput(turner)
-      );
+    if (snakeCanvas == null) {
+      return;
     }
+      for (const snakeInput of input) {
+        const turner = snakeCanvas.inputSnakeData(snakeInput);
+        snakeInput.onTurnInput(turner);
+      }
   }, [canvasRef.current, input]);
+  useEffect(() => {
+    const snakeCanvas = canvasRef.current;
+    if (snakeCanvas == null) {
+      return;
+    }
+    run ? snakeCanvas.run() : snakeCanvas.stop();
+  }, [canvasRef.current, run])
   return <div ref={containerRef} style={canvascontainerStyle} />;
 }

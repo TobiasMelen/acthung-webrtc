@@ -5,7 +5,7 @@ import { DEFAULT_COLOR, DEFAULT_FONT_FAMILY } from "../constants";
 const inputStyle = (color = DEFAULT_COLOR): CSSProperties => ({
   width: "100%",
   background: "none",
-  fontSize: "2em",
+  fontSize: "2.8em",
   fontWeight: 900,
   display: "block",
   border: "none",
@@ -13,7 +13,8 @@ const inputStyle = (color = DEFAULT_COLOR): CSSProperties => ({
   fontFamily: DEFAULT_FONT_FAMILY,
   borderRadius: 0,
   textAlign: "center",
-  padding: "0.5em"
+  padding: "0.5em 0",
+  textTransform: "uppercase",
 });
 
 function Input(

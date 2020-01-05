@@ -21,7 +21,7 @@ const contentStyle: CSSProperties = {
 export function LobbyContent({
   children,
   ...props
-}: PropsWithChildren<JSX.IntrinsicElements["article"]>) {
+}: PropsWithChildren<React.ComponentProps<"article">>) {
   return (
     <article {...props} style={contentStyle}>
       {children}

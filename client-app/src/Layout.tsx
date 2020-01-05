@@ -20,7 +20,7 @@ export function MainHeading({ children }: PropsWithChildren<{}>) {
 export function SubHeading({
   children,
   ...props
-}: JSX.IntrinsicElements["h2"]) {
+}: React.ComponentProps<"h2">) {
   return (
     <h2 {...props} style={useMemoMerge([subHeadingStyle, props.style])}>
       {children}

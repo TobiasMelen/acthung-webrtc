@@ -5,27 +5,24 @@
   "license": "MIT",
   "scripts": {
     "start": "parcel src/index.html",
+    "preview": "parcel src/preview/index.pug --cache-dir .preview-cache",
     "test": "jest"
   },
-  "browserslist": [
-    "last 3 Chrome versions",
-    "last 2 Safari versions"
+  "browserlist": [
+    "last 1 Chrome version"
   ],
   "devDependencies": {
-    "@babel/core": "^7.7.7",
-    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.7.4",
-    "@babel/plugin-proposal-optional-chaining": "^7.7.5",
-    "@babel/preset-typescript": "^7.7.7",
     "@types/jest": "^24.0.25",
     "@types/qrcode-svg": "^1.0.0",
     "@types/react": "^16.9.17",
     "@types/react-dom": "^16.9.4",
     "@types/socket.io-client": "^1.4.32",
     "@types/uuid": "^3.4.6",
-    "babel-jest": "^24.9.0",
     "jest": "^24.9.0",
     "parcel": "^1.12.4",
-    "typescript": "^3.7.3"
+    "pug": "^2.0.4",
+    "ts-jest": "^24.2.0",
+    "typescript": "^3.7.4"
   },
   "prettier": {
     "lineWidth": 90
