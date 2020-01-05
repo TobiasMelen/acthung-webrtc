@@ -8,7 +8,7 @@
     "preview": "parcel src/preview/index.pug --cache-dir .preview-cache",
     "test": "jest"
   },
-  "browserlist": [
+  "browserslist": [
     "last 1 Chrome version"
   ],
   "devDependencies": {

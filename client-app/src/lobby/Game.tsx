@@ -26,6 +26,10 @@ export default function Game({ players, lobbyName }: Props) {
   const [gameState, setGameState] = useState<GameState>({ type: "waiting" });
   const countdown = useSecondTicker();
   useEffect(() => {
+    if (!players.length && gameState.type !== "waiting") {
+      setGameState({ type: "waiting" });
+      return;
+    }
     if (
       gameState.type === "waiting" &&
       players.length &&
@@ -128,9 +132,7 @@ export default function Game({ players, lobbyName }: Props) {
                     margin: "1.5em 0.75em"
                   }}
                 >
-                  <div style={{ fontSize: "3.5em" }}>
-                    {player.score}
-                  </div>
+                  <div style={{ fontSize: "3.5em" }}>{player.score}</div>
                   <div style={{ fontSize: "1em", whiteSpace: "nowrap" }}>
                     {player.name}
                   </div>
