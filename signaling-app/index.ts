@@ -1,6 +1,12 @@
 import io from "socket.io";
+import http from "http";
 
-const socketServer = io(process.env.PORT ?? 8080, {
+const server = http.createServer((req, res) => {
+  res.writeHead(404, "Try websocket.");
+  res.end("sorry");
+});
+
+const socketServer = io(server, {
   serveClient: false
 });
 
@@ -30,3 +36,5 @@ socketServer.on("connect", socket => {
     }
   });
 });
+
+server.listen(process.env.PORT ?? 8080);
