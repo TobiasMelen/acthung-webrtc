@@ -7,6 +7,7 @@ import {
 import React from "react";
 import Triangle, { TriangleDirection } from "./Triangle";
 import useMediaMatch from "../useMediaMatch";
+import PlayerLayout from "./PlayerLayout";
 
 type Props = PropsWithChildren<{
   latency: number;
@@ -49,7 +50,7 @@ export default function SnakeControls({ setTurn, color, children }: Props) {
   const turnPlus = useInputHandlers(1, setPlusPressed);
 
   return (
-    <>
+    <PlayerLayout centered={false}>
       <TurnButton
         color={color}
         direction={arrowDirections?.[0] ?? "left"}
@@ -63,7 +64,7 @@ export default function SnakeControls({ setTurn, color, children }: Props) {
         pressed={plusPressed}
         handler={turnPlus}
       />
-    </>
+    </PlayerLayout>
   );
 }
 
