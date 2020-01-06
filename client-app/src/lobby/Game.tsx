@@ -18,6 +18,7 @@ type Props = {
 type GameState =
   | { type: "waiting" }
   | { type: "countdown" }
+  | { type: "message"; message: string }
   | { type: "playing"; running: boolean; joinedPlayerIds: string[] }
   | { type: "roundOver"; winner?: LobbyPlayer }
   | { type: "gameOver"; winner: LobbyPlayer };
@@ -35,21 +36,27 @@ export default function Game({ players, lobbyName }: Props) {
       players.length &&
       players.every(player => player.ready)
     ) {
-      const startCountdown = window.setTimeout(() => {
-        setGameState({ type: "countdown" });
+      let countdownRef: number;
+      countdownRef = window.setTimeout(() => {
+        setGameState({ type: "message", message: "Get Ready" });
+        window.setTimeout(() => {
+          setGameState({
+            type: "countdown"
+          });
+        }, 3000);
       }, 1000);
       return () => {
-        window.clearTimeout(startCountdown);
+        window.clearTimeout(countdownRef);
       };
     }
     if (gameState.type === "roundOver") {
       const startCountdown = window.setTimeout(() => {
         setGameState({ type: "countdown" });
-      }, 4000);
+      }, 2500);
       return () => window.clearTimeout(startCountdown);
     }
     if (gameState.type === "countdown") {
-      countdown.start(5);
+      !countdown.isRunning && countdown.start(5);
       countdown.onDone(() =>
         setGameState({
           type: "playing",
@@ -115,37 +122,9 @@ export default function Game({ players, lobbyName }: Props) {
     case "playing": {
       return (
         <LobbyLayout>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              height: "100%"
-            }}
-          >
-            <div style={{ flexGrow: 1 }}>
-              {players.map(player => (
-                <div
-                  style={{
-                    color: player.color,
-                    textAlign: "right",
-                    margin: "1.5em 0.75em"
-                  }}
-                >
-                  <div style={{ fontSize: "3.5em" }}>{player.score}</div>
-                  <div style={{ fontSize: "1em", whiteSpace: "nowrap" }}>
-                    {player.name}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {ALL_COLORS.length > players.length && (
-              <div style={{ padding: "0.5em" }}>
-                <QrCode>{url}</QrCode>
-              </div>
-            )}
-          </div>
-          <GameRound input={gameInput} run={gameState.running} />
+          <GameRound input={gameInput} run={gameState.running}>
+            <FixedStats players={players} url={url} />
+          </GameRound>
         </LobbyLayout>
       );
     }
@@ -167,34 +146,116 @@ export default function Game({ players, lobbyName }: Props) {
     }
     case "gameOver": {
       return (
-        <LobbyLayout>
-          <Banger>
-            <span style={{ color: gameState.winner.color }}>
-              {gameState.winner.name}
-            </span>{" "}
-            wins the game
-          </Banger>
-        </LobbyLayout>
+        <Banger>
+          <span style={{ color: gameState.winner.color }}>
+            {gameState.winner.name}
+          </span>{" "}
+          wins the game
+        </Banger>
+      );
+    }
+    case "message": {
+      return (
+        <Banger startingEm={gameState.message.length < 25 ? 30 : undefined}>
+          {gameState.message}
+        </Banger>
       );
     }
     case "countdown": {
       return (
-        <LobbyLayout>
-          <Banger
-            key="countdown"
-            adjustWithChildren={false}
-            style={{ maxWidth: "70%" }}
-          >
+        <>
+          <FixedStats players={players} url={url} />
+          <DisplayCountDown count={countdown.secondsLeft}>
             {players.every(player => player.score === 0)
               ? "Game starts"
               : "Next round"}{" "}
             in{" "}
-            <span style={{ display: "inline-block", width: "0.8em" }}>
-              {countdown.secondsLeft}
-            </span>
-          </Banger>
-        </LobbyLayout>
+          </DisplayCountDown>
+        </>
       );
     }
   }
 }
+
+const DisplayCountDown = ({
+  count,
+  children
+}: {
+  count: number;
+  children: React.ReactNode;
+}) => {
+  const [color] = useState(
+    ALL_COLORS[Math.floor(Math.random() * ALL_COLORS.length)]
+  );
+  return (
+    <Banger
+      key="countdown"
+      adjustWithChildren={false}
+      style={{ maxWidth: "60%" }}
+    >
+      {children}
+      <span style={{ display: "inline-block", width: "0.8em" }}>
+        {count}
+      </span>
+    </Banger>
+  );
+};
+
+const FixedStats = ({
+  players,
+  url
+}: {
+  players: LobbyPlayer[];
+  url: string;
+}) => {
+  return (
+      <div
+        style={{
+          position: "absolute",
+          zIndex: -1,
+          right: 0,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          height: "100%"
+        }}
+      >
+        <div
+          style={{
+            flexGrow: 1,
+            display: "flex",
+            justifyContent: "center",
+            flexDirection: "column",
+            alignItems: "flex-end"
+          }}
+        >
+          {players.map(player => (
+            <div
+              style={{
+                color: player.color,
+                textAlign: "right",
+                margin: "0 1.5em",
+                paddingBottom: "2em"
+              }}
+            >
+              <div style={{ fontSize: "5.2em" }}>{player.score}</div>
+              <div style={{ fontSize: "1.2em", whiteSpace: "nowrap" }}>
+                {player.name}
+              </div>
+            </div>
+          ))}
+        </div>
+        {ALL_COLORS.length > players.length && (
+        <QrCode
+          style={{
+            width: 200,
+            height: 200,
+            margin: "2em"
+          }}
+        >
+          {url}
+        </QrCode>
+      )}
+      </div>
+  );
+};

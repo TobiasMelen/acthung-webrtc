@@ -38,6 +38,7 @@ export default function useSecondTicker(seconds: number = 0) {
       if (newValue > 0) {
         setTimeout(tick, 1000);
       } else {
+        ticker.current = undefined;
         doneCallback.current();
       }
       return newValue;
@@ -48,7 +49,7 @@ export default function useSecondTicker(seconds: number = 0) {
       secondsLeft,
       start,
       pause,
-      isRunning: ticker != null,
+      isRunning: ticker.current != null,
       onDone,
       onTick
     }),

@@ -21,21 +21,27 @@ export default function Waiting({ url, players }: Props) {
     <LobbyLayout>
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-          justifyContent: "center"
+          width: "50%",
+          maxHeight: "75%"
         }}
       >
-        <div style={{ maxHeight: "80%", marginTop: "2em", overflow: "hidden" }}>
-          <QrCode>{url}</QrCode>
-        </div>
-        <h4 style={{ textDecoration: "underline" }}>{url}</h4>
+        <QrCode>{url}</QrCode>
+        <a
+          href={url}
+          style={{
+            textAlign: "center",
+            display: "block",
+            fontSize: "1.2em",
+            marginTop: "0.8em"
+          }}
+        >
+          {url}
+        </a>
       </div>
       {players.length ? (
         <div style={{ ...verticalFlex, marginLeft: "3.5em", minWidth: "25%" }}>
           {players.map(player => (
-              <PlayerItem key={player.id}{...player} />
+            <PlayerItem key={player.id} {...player} />
           ))}
         </div>
       ) : null}

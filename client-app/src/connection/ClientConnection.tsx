@@ -4,8 +4,10 @@ import {
   createSignalClient
 } from "./commonConnections";
 import uuid from "uuid/v4";
-import { MessageChannelToLobby, createMessageChannelToLobby } from "../messaging/dataChannelMessaging";
-
+import {
+  MessageChannelToLobby,
+  createMessageChannelToLobby
+} from "../messaging/dataChannelMessaging";
 
 type Props = {
   lobbyName: string;
@@ -13,7 +15,9 @@ type Props = {
 };
 
 export default function ClientConnection({ lobbyName, children }: Props) {
-  const [lobbyMessageChannel, setLobbyMessageChannel] = useState<MessageChannelToLobby>();
+  const [lobbyMessageChannel, setLobbyMessageChannel] = useState<
+    MessageChannelToLobby
+  >();
   //Create id on client session to support reconnecting. This will be a secret between server/client.
   const clientId = useMemo(() => {
     const key = `clientId/${lobbyName}`;
@@ -41,12 +45,11 @@ export default function ClientConnection({ lobbyName, children }: Props) {
       const peerConnection = createRTCPeerConnection();
 
       const channel = peerConnection.createDataChannel("Client data channel", {
-        maxRetransmits: 0,
-        protocol: "json",
+        maxRetransmits: 1,
         ordered: false
       });
       channel.onopen = () => {
-        const handles = createMessageChannelToLobby(channel);
+        const handles = createMessageChannelToLobby(peerConnection, channel);
         setLobbyMessageChannel(handles);
       };
 
@@ -63,6 +66,11 @@ export default function ClientConnection({ lobbyName, children }: Props) {
       peerConnection.oniceconnectionstatechange = () => {
         //clear disconnect timeout if set.
         clearTimeout(peerDisconnectTimeout);
+        const disconnect = () =>
+          setLobbyMessageChannel(channel => {
+            channel?.destroy();
+            return undefined;
+          });
         switch (peerConnection.iceConnectionState) {
           case "completed": {
             //Connection has been made. No need to keep the connection the signal server open.
@@ -71,18 +79,12 @@ export default function ClientConnection({ lobbyName, children }: Props) {
             break;
           }
           case "disconnected": {
-            //Give this weirdly documented state 500ms to recover before trying a reconnect from scratch;
-            peerDisconnectTimeout = window.setTimeout(
-              () => setLobbyMessageChannel(undefined),
-              500
-            );
+            //Give this weirdly documented state one second to recover before trying a reconnect from scratch;
+            peerDisconnectTimeout = window.setTimeout(disconnect, 1000);
             break;
           }
           case "failed": {
-            setLobbyMessageChannel(undefined);
-            alert(
-              `failed ${peerConnection.connectionState} ${peerConnection.idpErrorInfo}`
-            );
+            disconnect();
             break;
           }
         }

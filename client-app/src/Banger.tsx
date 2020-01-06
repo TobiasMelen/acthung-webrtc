@@ -3,7 +3,8 @@ import {
   CSSProperties,
   useRef,
   useState,
-  useEffect
+  useEffect,
+  useCallback
 } from "react";
 import PlayerLayout from "./client/PlayerLayout";
 import React from "react";
@@ -24,12 +25,27 @@ export default function Banger({
   style: styleProp,
   adjustWithChildren = true,
   startingEm = 20
-}: PropsWithChildren<{ adjustWithChildren?: boolean, style?: CSSProperties, startingEm?: number }>) {
+}: PropsWithChildren<{
+  adjustWithChildren?: boolean;
+  style?: CSSProperties;
+  startingEm?: number;
+}>) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [headingSize, setHeadingSize] = useState({
     em: startingEm,
     validated: false
   });
+  const shrinkToFit = useCallback(() => {
+    if (headingSize.validated || headingRef.current == null) {
+      return;
+    }
+    const fits =
+      headingRef.current.clientHeight <= document.body.scrollHeight &&
+      headingRef.current.clientWidth <= document.body.clientWidth;
+    setHeadingSize(size =>
+      fits ? { ...size, validated: true } : { ...size, em: size.em - 1 }
+    );
+  }, [headingSize, headingRef.current]);
   useEffectWithDeps(
     prev => {
       adjustWithChildren &&
@@ -39,17 +55,14 @@ export default function Banger({
     [children]
   );
   useEffect(() => {
-    if (headingSize.validated || headingRef.current == null) {
-      return;
-    }
-    console.log(document.body.clientHeight, headingRef.current.clientHeight);
-    const fits =
-      headingRef.current.clientHeight <= document.body.scrollHeight &&
-      headingRef.current.clientWidth <= document.body.clientWidth;
-    setHeadingSize(size =>
-      fits ? { ...size, validated: true } : { ...size, em: size.em - 1 }
-    );
-  }, [headingSize, headingRef.current]);
+    shrinkToFit();
+    let timeout: number;
+    window.addEventListener("resize", () => {
+      window.clearTimeout(timeout);
+      timeout = window.setTimeout(shrinkToFit, 1000);
+    });
+    return () => window.clearTimeout(timeout);
+  }, [shrinkToFit]);
   return (
     <PlayerLayout>
       <h1

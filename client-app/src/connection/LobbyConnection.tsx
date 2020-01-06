@@ -48,12 +48,17 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
   );
 
   const onClientDataChannel = useCallback(
-    (id: string) => ({ channel }: RTCDataChannelEvent) => {
+    (connection: RTCPeerConnection, id: string) => ({ channel }: RTCDataChannelEvent) => {
       channel.onclose = () => removeConnection(id);
-      setClientConnections(connections => ({
-        ...connections,
-        [id]: createMessageChannelToPlayer(channel)
-      }));
+      setClientConnections(connections => {
+        if(connections[id] != null){
+          connections[id].off
+        }
+        return {
+          ...connections,
+          [id]: createMessageChannelToPlayer(connection, channel)
+        };
+      });
     },
     [setClientConnections]
   );
@@ -66,7 +71,7 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
           return;
         }
         const clientConnection = createRTCPeerConnection();
-        clientConnection.ondatachannel = onClientDataChannel(offerFrom);
+        clientConnection.ondatachannel = onClientDataChannel(clientConnection, offerFrom);
         clientConnection.onicecandidate = event =>
           event.candidate != null &&
           signalClient.send({
@@ -74,9 +79,9 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
             data: event.candidate.toJSON()
           });
         clientConnection.oniceconnectionstatechange = () => {
-          console.log("connection state changed", clientConnection.iceConnectionState)
-          clientConnection.iceConnectionState === "failed" || clientConnection.iceConnectionState === "disconnected" &&
-            removeConnection(offerFrom);
+          clientConnection.iceConnectionState === "failed" ||
+            (clientConnection.iceConnectionState === "disconnected" &&
+              removeConnection(offerFrom));
         };
         signalClient.on(
           "message",

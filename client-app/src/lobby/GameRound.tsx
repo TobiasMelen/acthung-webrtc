@@ -6,6 +6,7 @@ type Props = {
   input: (SnakeInput & {
     onTurnInput(callBack: (turn: number) => void): void;
   })[];
+  children?: React.ReactNode;
 };
 
 const canvascontainerStyle: CSSProperties = {
@@ -13,7 +14,7 @@ const canvascontainerStyle: CSSProperties = {
   height: "100%",
   width: "100%"
 };
-export default function GameRound({ run, input }: Props) {
+export default function GameRound({ run, input, children }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<ReturnType<typeof createSnakeCanvas>>();
   useEffect(() => {
@@ -41,5 +42,5 @@ export default function GameRound({ run, input }: Props) {
     }
     run ? snakeCanvas.run() : snakeCanvas.stop();
   }, [canvasRef.current, run])
-  return <div ref={containerRef} style={canvascontainerStyle} />;
+  return <div ref={containerRef} style={canvascontainerStyle}>{children}</div>;
 }

@@ -42,8 +42,6 @@ export default function Lobby({ clientConnections, children }: Props) {
     colorAvailability: getColorAvailability()
   });
 
-  const playerTimeouts = useRef({} as { [id: string]: number });
-
   //Create players from connections
   useEffectWithDeps(
     prevDeps => {
@@ -125,34 +123,6 @@ export default function Lobby({ clientConnections, children }: Props) {
     },
     [clientConnections] as const
   );
-
-  //Timeout players with no connection (can't be in same effect as connection assignment) state has to be updated.
-  useEffect(() => {
-    const timeouts = playerTimeouts.current;
-    Object.keys(playerStates).forEach(key => {
-      //if players has no connection, time them out
-      if (clientConnections[key] == null) {
-        console.log("timing out player", key);
-        timeouts[key] =
-          timeouts[key] ??
-          window.setTimeout(
-            () =>
-              setPlayerState(({ [key]: _timedOutPlayer, ...states }) => ({
-                ...states
-              })),
-            3000
-          );
-      }
-      //if a client connection reconnected, stop timeout
-      else if (timeouts[key] != null) {
-        console.log("stop timing out player", key);
-        window.clearTimeout(timeouts[key]);
-        delete timeouts[key];
-      }
-    });
-    //I'm so confused, do i really need to do this?
-    playerTimeouts.current = timeouts;
-  }, [playerStates]);
 
   //Update gamestate colors from player-updates
   const assignedColors = Object.values(playerStates).map(

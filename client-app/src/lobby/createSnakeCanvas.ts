@@ -10,13 +10,12 @@ export default function createSnakeCanvas(
   container: HTMLElement,
   snakeInputs: SnakeInput[],
   {
-    snakeSpeed = 2,
-    lineWidth = 10,
+    snakeSpeed = 2.2,
+    lineWidth = 8,
     turnRadius = 0.04,
     startPositionSpread = 0.5,
-    borderColor = "#fff",
-    chanceToBecomeAHole = 0.0001,
-    holeDuration = 15,
+    startingHoleChancePercantage = -5,
+    holeDuration = 10,
     maxVerticalResolution = 1080
   } = {}
 ) {
@@ -42,27 +41,13 @@ export default function createSnakeCanvas(
     const scaleFactor = canvas.height / maxVerticalResolution;
     context.scale(scaleFactor, scaleFactor);
   }
-  context.globalCompositeOperation = "destination-over";
-
-  //Draw border
-  context.beginPath();
-  context.strokeStyle = borderColor;
-  const borderThickness = lineWidth;
-  context.lineWidth = borderThickness;
-  context.strokeRect(
-    borderThickness / 2,
-    borderThickness / 2,
-    context.canvas.width - borderThickness,
-    context.canvas.height - borderThickness
-  );
-  context.stroke();
-  context.closePath();
+  // context.globalCompositeOperation = "destination-over";
 
   const createNewSnake = () => ({
     hasCollided: false,
     turn: 0,
     direction: Math.round(Math.random() * 360),
-    holeChance: chanceToBecomeAHole,
+    holeChance: startingHoleChancePercantage,
     position: {
       x:
         (Math.random() + startPositionSpread) *
@@ -97,24 +82,28 @@ export default function createSnakeCanvas(
       return;
     }
     if (snake.currentHoleSection == 0) {
-      if (snake.holeChance > 0.001 && Math.random() < snake.holeChance) {
+      if (snake.holeChance > 0 && Math.random() * 100 < snake.holeChance) {
         snake.currentHoleSection = holeDuration;
-        snake.holeChance = chanceToBecomeAHole;
+        snake.holeChance = startingHoleChancePercantage;
       } else {
-        snake.holeChance = snake.holeChance + chanceToBecomeAHole;
+        snake.holeChance = snake.holeChance + 0.1;
       }
     }
 
     const willCollide =
       checkCollision &&
-      context.getImageData(
-        snake.position.x +
-          (snakeSpeed + lineWidth / 2) * Math.cos(snake.direction),
-        snake.position.y +
-          (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
-        1,
-        1
-      ).data[3] !== 0;
+      (snake.position.x < 0 ||
+        snake.position.x > canvas.width ||
+        snake.position.y < 0 ||
+        snake.position.y > canvas.height ||
+        context.getImageData(
+          snake.position.x +
+            (snakeSpeed + lineWidth / 2) * Math.cos(snake.direction),
+          snake.position.y +
+            (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
+          1,
+          1
+        ).data[3] !== 0);
     if (willCollide) {
       snake.hasCollided = true;
       snake.onCollision();

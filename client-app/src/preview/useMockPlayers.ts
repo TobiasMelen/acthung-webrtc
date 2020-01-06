@@ -6,13 +6,15 @@ import useEffectWithDeps from "../useEffectWithDeps";
 type Options = {
   numberOfPlayers?: number;
   playersReady?: boolean;
+  autoPlay?: boolean;
 };
 
 type MockPlayer = LobbyPlayer & { hidden: boolean };
 
 export default function useMockPlayers({
   numberOfPlayers = ALL_COLORS.length,
-  playersReady = true
+  playersReady = true,
+  autoPlay = true
 }: Options) {
   const modifyPlayer = (id: string) => (
     fn: (player: MockPlayer) => MockPlayer
@@ -73,7 +75,7 @@ export default function useMockPlayers({
   );
 
   useEffect(() => {
-    if (players.every(player => !player.hidden)) {
+    if (!autoPlay || players.every(player => !player.hidden)) {
       return;
     }
     const showPlayer = window.setTimeout(() => {
@@ -94,7 +96,7 @@ export default function useMockPlayers({
   }, [players]);
 
   useEffect(() => {
-    if (players.every(player => player.ready)) {
+    if (!autoPlay || players.every(player => player.ready)) {
       return;
     }
     const readyPlayer = window.setTimeout(() => {

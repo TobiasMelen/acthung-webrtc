@@ -1,13 +1,14 @@
-import React, { ComponentProps, CSSProperties } from "react";
+import React, { ComponentProps, CSSProperties, useMemo } from "react";
 import { useMemoMerge } from "../useMemoMerge";
 import useMediaMatch, { MediaQueryMatch } from "../useMediaMatch";
 
-const containerStyle: CSSProperties = {
+const createContainerStyle = (centered: boolean): CSSProperties => ({
   width: "100vw",
   display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center"
-};
+  justifyContent: centered ? "center" : "space-between",
+  alignItems: "center",
+  overflow: "hidden"
+});
 
 const containerMediaStyle: MediaQueryMatch<CSSProperties> = {
   "(orientation: landscape)": {
@@ -21,14 +22,20 @@ const containerMediaStyle: MediaQueryMatch<CSSProperties> = {
   }
 };
 
-export default function PlayerLayout(props: ComponentProps<"main">) {
+export default function PlayerLayout({
+  centered = true,
+  ...props
+}: { centered?: boolean } & ComponentProps<"main">) {
   const containerMediaMatchStyle = useMediaMatch(containerMediaStyle);
+  const containerStyle = useMemo(() => createContainerStyle(centered), [
+    centered
+  ]);
   return (
     <main
       {...props}
       style={useMemoMerge(
         [containerStyle, ...containerMediaMatchStyle, props.style],
-        [containerStyle, containerMediaMatchStyle, props.style]
+        [createContainerStyle, containerMediaMatchStyle, props.style]
       )}
     />
   );

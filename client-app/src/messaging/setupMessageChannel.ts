@@ -17,6 +17,7 @@ export type ConverterCollection = Record<string, Converter<any>>;
 type EventHooks<TExtraSendParams extends any[] = []> = {
   send(input: string, ...params: TExtraSendParams): void;
   triggerReceive(trigger: (input: string) => void): void;
+  destroy(): void;
 };
 
 type ConverterType<
@@ -41,10 +42,13 @@ export type MessageChannel<
     type: TMessage,
     fn: (data: ConverterType<TReceive[TMessage]>) => void
   ): void;
+  destroy(): void;
 };
 
 //HoF just to cut down on TS generic bloat.
-export default function setupMessageChannel<TExtraSendParams extends any[] = []>(channelHooks: EventHooks<TExtraSendParams>) {
+export default function setupMessageChannel<
+  TExtraSendParams extends any[] = []
+>(channelHooks: EventHooks<TExtraSendParams>) {
   return <
     TSend extends ConverterCollection,
     TReceive extends ConverterCollection
@@ -61,7 +65,7 @@ export default function setupMessageChannel<TExtraSendParams extends any[] = []>
       const messageType =
         indexOfMessageSeparator && input.substring(0, indexOfMessageSeparator);
       //No message type could be parsed, exit out
-      if(!messageType){
+      if (!messageType) {
         return;
       }
       //if this is a configured bounce message, bounce it directly as it came.
@@ -80,7 +84,7 @@ export default function setupMessageChannel<TExtraSendParams extends any[] = []>
     });
     return {
       send(type, data, ...extraParams) {
-        console.log('sending', data)
+        console.log("sending", data);
         const message = `${type};${send[type].serialize(data)}`;
         channelHooks.send(message, ...extraParams);
       },
@@ -95,7 +99,8 @@ export default function setupMessageChannel<TExtraSendParams extends any[] = []>
         if (fnIndex != null && fnIndex != -1) {
           listeners.get(type)?.splice(fnIndex, 1);
         }
-      }
+      },
+      destroy: channelHooks.destroy
     };
   };
 }

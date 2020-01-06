@@ -10,11 +10,12 @@ const previews = parcelPreviews as Record<
 
 function PreviewPicker() {
   const [selectedComponent, setSelectedComponent] = useState(
-    Object.keys(previews)[0]
+    sessionStorage["selectedPreviewComponent"] ?? Object.keys(previews)[0]
   );
   const onSelectChange = useCallback(
     (ev: React.ChangeEvent<HTMLSelectElement>) => {
       setSelectedComponent(ev.target.value);
+      sessionStorage["selectedPreviewComponent"] = ev.target.value;
     },
     []
   );
