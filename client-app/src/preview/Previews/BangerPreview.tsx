@@ -4,7 +4,7 @@ import React from "react";
 export const title = "Banger";
 
 export const props = {
-  content: "prepare"
+  content: "you lose"
 };
 
 export default function BangerPreview({ content }: typeof props) {

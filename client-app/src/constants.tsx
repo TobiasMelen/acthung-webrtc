@@ -12,4 +12,4 @@ export const DEFAULT_FONT_FAMILY = `-apple-system, BlinkMacSystemFont, "Segoe UI
 
 export const DEFAULT_FONT_FAMILY_MONOSPACE = `SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace`
 
-export const ALL_COLORS = ["#0f0", "#f00", "#00f", "#ff0", "#f0f", "#0ff", "#fff"];
+export const ALL_COLORS = ["#3f5", "#f24", "#46f", "#ef2", "#d3f", "#f9b", "#fff"];
