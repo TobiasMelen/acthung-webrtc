@@ -20,11 +20,11 @@ type OfferMessage = { from?: string; data: RTCSessionDescriptionInit };
 type CandidateMessage = { from?: string; data: RTCIceCandidateInit | {} };
 
 export default function LobbyConnection({ lobbyName, children }: Props) {
-  const [clientConnections, setClientConnections] = useState<PlayerConnections>(
-    {}
-  );
+  const [clientConnections, setClientConnections] = useState<{
+    [id: string]: [RTCPeerConnection, MessageChannelToPlayer];
+  }>({});
 
-  const [signalClient, signalStatus] = useSignalClient(
+  const [signalClient] = useSignalClient(
     useMemo(
       () => ({
         query: {
@@ -35,28 +35,37 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
     )
   );
 
-  const removeConnection = useCallback(
-    (id: string) => {
+  const removeStaleConnection = useCallback(
+    (staleConnection: RTCPeerConnection) => {
       setClientConnections(connections =>
         Object.keys(connections).reduce((acc, key) => {
-          key !== id && acc[key] == connections.key;
+          if (connections[key]?.[0] !== staleConnection) {
+            acc[key] = connections[key];
+          } else {
+            //stale connection, try closing everything if it still is around.
+            console.log("discarding connection in state", staleConnection.iceConnectionState)
+            try {
+              connections[key][1].destroy();
+            } catch (err) {
+              console.error("Error cleaning up stale connection", err);
+            }
+          }
           return acc;
-        }, {} as PlayerConnections)
+        }, {} as typeof clientConnections)
       );
     },
     [setClientConnections]
   );
 
   const onClientDataChannel = useCallback(
-    (connection: RTCPeerConnection, id: string) => ({ channel }: RTCDataChannelEvent) => {
-      channel.onclose = () => removeConnection(id);
+    (connection: RTCPeerConnection, id: string) => ({
+      channel
+    }: RTCDataChannelEvent) => {
+      channel.onclose = () => removeStaleConnection(connection);
       setClientConnections(connections => {
-        if(connections[id] != null){
-          connections[id].off
-        }
         return {
           ...connections,
-          [id]: createMessageChannelToPlayer(connection, channel)
+          [id]: [connection, createMessageChannelToPlayer(connection, channel)]
         };
       });
     },
@@ -71,7 +80,10 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
           return;
         }
         const clientConnection = createRTCPeerConnection();
-        clientConnection.ondatachannel = onClientDataChannel(clientConnection, offerFrom);
+        clientConnection.ondatachannel = onClientDataChannel(
+          clientConnection,
+          offerFrom
+        );
         clientConnection.onicecandidate = event =>
           event.candidate != null &&
           signalClient.send({
@@ -81,7 +93,7 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
         clientConnection.oniceconnectionstatechange = () => {
           clientConnection.iceConnectionState === "failed" ||
             (clientConnection.iceConnectionState === "disconnected" &&
-              removeConnection(offerFrom));
+              removeStaleConnection(clientConnection));
         };
         signalClient.on(
           "message",
@@ -99,5 +111,15 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
       }
     );
   }, [signalClient, onClientDataChannel]);
-  return children(clientConnections);
+
+  const playerConnections = useMemo(
+    () =>
+      Object.entries(clientConnections).reduce((acc, [key, value]) => {
+        acc[key] = value[1];
+        return acc;
+      }, {} as PlayerConnections),
+    [clientConnections]
+  );
+
+  return children(playerConnections);
 }

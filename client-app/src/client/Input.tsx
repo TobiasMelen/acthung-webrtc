@@ -15,6 +15,7 @@ const inputStyle = (color = DEFAULT_COLOR): CSSProperties => ({
   textAlign: "center",
   padding: "0.5em 0",
   textTransform: "uppercase",
+  caretColor: color,
 });
 
 function Input(
@@ -23,6 +24,7 @@ function Input(
 ) {
   return (
     <input
+      autoCapitalize="characters"
       type="text"
       ref={ref}
       {...props}

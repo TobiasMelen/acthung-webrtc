@@ -211,7 +211,7 @@ function EnterCreds({
           </section>
         )} */}
         <section style={{ marginTop: "1.5em" }}>
-          <Button color={props.color} onClick={() => props.setReady(true)}>
+          <Button color={props.color} disabled={!props.name} onClick={() => props.setReady(true)}>
             Ready!
           </Button>
         </section>

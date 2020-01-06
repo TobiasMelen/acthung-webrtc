@@ -13,38 +13,53 @@ type Props = {
 const verticalFlex: CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  justifyContent: "center"
+  justifyContent: "center",
+  alignItems: "start"
 };
 
 export default function Waiting({ url, players }: Props) {
   return (
     <LobbyLayout>
+      <div style={{width: "15%"}} />
       <div
         style={{
           width: "50%",
           maxHeight: "75%"
         }}
       >
-        <QrCode>{url}</QrCode>
+        <QrCode
+          style={{
+            maxWidth: 550,
+            maxHeight: 550,
+            margin: "0 auto"
+          }}
+        >
+          {url}
+        </QrCode>
         <a
           href={url}
           style={{
             textAlign: "center",
             display: "block",
-            fontSize: "1.2em",
+            fontSize: "0.8em",
             marginTop: "0.8em"
           }}
         >
           {url}
         </a>
       </div>
-      {players.length ? (
-        <div style={{ ...verticalFlex, marginLeft: "3.5em", minWidth: "25%" }}>
-          {players.map(player => (
-            <PlayerItem key={player.id} {...player} />
-          ))}
-        </div>
-      ) : null}
+      <div
+        style={{
+          ...verticalFlex,
+          width: "15%",
+          flexGrow: players.length ? 1 : 0,
+          transition: "flex-grow 250ms ease-out"
+        }}
+      >
+        {players.map(player => (
+          <PlayerItem key={player.id} {...player} />
+        ))}
+      </div>
     </LobbyLayout>
   );
 }
@@ -66,8 +81,8 @@ const PlayerItem = (player: Props["players"][0]) => {
       }}
       key={player.id}
     >
-      <SubHeading style={{ color: player.color, fontSize: "2em" }}>
-        {player.name} {player.ready ? "✓" : "  "}
+      <SubHeading style={{ color: player.color, fontSize: "3em", transition: "color 150ms"}}>
+        {player.name} {player.ready ? "👍" : "  "}
       </SubHeading>
     </div>
   );

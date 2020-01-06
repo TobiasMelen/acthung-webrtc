@@ -84,7 +84,6 @@ export default function setupMessageChannel<
     });
     return {
       send(type, data, ...extraParams) {
-        console.log("sending", data);
         const message = `${type};${send[type].serialize(data)}`;
         channelHooks.send(message, ...extraParams);
       },

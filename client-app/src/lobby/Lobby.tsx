@@ -66,6 +66,7 @@ export default function Lobby({ clientConnections, children }: Props) {
               if (assignedColor != null) {
                 updatedColorAvailability[assignedColor] = false;
                 return {
+                  id: connKey,
                   name: `Player ${index + 1}`,
                   color: assignedColor,
                   ready: false,
@@ -92,17 +93,14 @@ export default function Lobby({ clientConnections, children }: Props) {
             queuespot++;
             return acc;
           }
-          //Wire or re-wire player message handlers
+          //Wire or re-wire player message handlers for new players or connections
           const currentConnection = clientConnections[connKey];
           if (
             prevPlayerState == null ||
             currentConnection !== prevConnections[connKey]
           ) {
             currentConnection.on("setColor", color => {
-              //only accept existing, non assigned, colors
-              if (gameState.colorAvailability[color]) {
                 modifyPlayer(player => ({ ...player, color }));
-              }
             });
             currentConnection.on("setName", name => {
               modifyPlayer(player => ({ ...player, name }));
