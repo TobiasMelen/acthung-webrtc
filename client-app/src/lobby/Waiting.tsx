@@ -20,7 +20,7 @@ const verticalFlex: CSSProperties = {
 export default function Waiting({ url, players }: Props) {
   return (
     <LobbyLayout>
-      <div style={{width: "15%"}} />
+      <div style={{ width: "15%" }} />
       <div
         style={{
           width: "50%",
@@ -81,8 +81,14 @@ const PlayerItem = (player: Props["players"][0]) => {
       }}
       key={player.id}
     >
-      <SubHeading style={{ color: player.color, fontSize: "3em", transition: "color 150ms"}}>
-        {player.name} {player.ready ? "👍" : "  "}
+      <SubHeading
+        style={{
+          color: player.color,
+          fontSize: "3em",
+          transition: "color 150ms"
+        }}
+      >
+        {player.name} {player.ready ? <small>👍</small> : "  "}
       </SubHeading>
     </div>
   );

@@ -93,37 +93,43 @@ function PlayerCreator({
 }
 
 export default function Client({ lobbyName = "new" }: Props) {
+  const renderCore = useCallback(
+    (player?: ClientPlayer, gameState?: GameState) => {
+      if (player == null) {
+        return <Banger>Connecting</Banger>;
+      }
+      switch (player.state) {
+        case "joining":
+          return player.ready ? (
+            <Banger>Waiting</Banger>
+          ) : (
+            <EnterCreds {...player} colors={gameState?.colorAvailability} />
+          );
+        case "playing":
+          return (
+            <SnakeControls
+              setTurn={player.setTurn}
+              color={player.color}
+              latency={player.latency}
+            />
+          );
+        case "dead":
+          return <Banger>You dead</Banger>;
+      }
+    },
+    []
+  );
   return (
     <PlayerLayout>
       <ClientDataChannel lobbyName={lobbyName}>
         {channel => (
           <PlayerCreator connection={channel}>
-            {(player, gameState) => {
-              if (player == null) {
-                return <Banger>Connecting</Banger>;
-              }
-              switch (player.state) {
-                case "joining":
-                  return player.ready ? (
-                    <Banger>Waiting</Banger>
-                  ) : (
-                    <EnterCreds
-                      {...player}
-                      colors={gameState?.colorAvailability}
-                    />
-                  );
-                case "playing":
-                  return (
-                    <SnakeControls
-                      setTurn={player.setTurn}
-                      color={player.color}
-                      latency={player.latency}
-                    />
-                  );
-                case "dead":
-                  return <Banger>You dead</Banger>;
-              }
-            }}
+            {(player, gameState) => (
+              <>
+                <Latency latency={player?.latency} />
+                {renderCore(player, gameState)}
+              </>
+            )}
           </PlayerCreator>
         )}
       </ClientDataChannel>
@@ -146,61 +152,57 @@ function EnterCreds({
   );
   const inputRef = useRef<HTMLInputElement>(null);
   return (
-      <article
-        style={{ textAlign: "center", maxWidth: "95%", margin: "auto 0" }}
+    <article style={{ textAlign: "center", maxWidth: "95%", margin: "auto 0" }}>
+      <Input
+        ref={inputRef}
+        style={{ color: props.color, margin: "1em auto", maxWidth: "75%" }}
+        value={hasDefaultName ? "" : props.name}
+        onChange={onChangeInput}
+        placeholder={hasDefaultName ? props.name : ""}
+        maxLength={10}
+        autoCorrect="off"
+        spellCheck={false}
+      />
+      <section
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          width: "100%",
+          flexWrap: "wrap",
+          justifyContent: "center"
+        }}
       >
-        <Input
-          ref={inputRef}
-          style={{ color: props.color, margin: "1em auto", maxWidth: "75%" }}
-          value={hasDefaultName ? "" : props.name}
-          onChange={onChangeInput}
-          placeholder={hasDefaultName ? props.name : ""}
-          maxLength={10}
-          autoCorrect="off"
-          spellCheck={false}
-        />
-        <section
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            width: "100%",
-            flexWrap: "wrap",
-            justifyContent: "center"
-          }}
-        >
-          {Object.entries(colors).map(([color, available]) => {
-            const isPlayerColor = color === props.color;
-            return (
-              <figure
-                key={color}
-                onClick={() => available && props.setColor(color)}
-                style={{
-                  boxSizing: "border-box",
-                  width: 50,
-                  height: 50,
-                  margin: 15,
-                  borderRadius: "50%",
-                  background: color,
-                  transform:
-                    isPlayerColor || !available
-                      ? `scale(${isPlayerColor ? 1.2 : 0.8})`
-                      : undefined,
-                  transition:
-                    "transform 150ms ease-out, box-shadow 150ms ease-out, opacity 75ms ease-out",
-                  opacity: isPlayerColor || available ? 1 : 0.2,
-                  boxShadow: isPlayerColor
-                    ? "inset 0 0 0 5px rgba(0,0,0,0.1)"
-                    : "none"
-                }}
-              >
-                <figcaption style={{ visibility: "hidden" }}>
-                  {color}
-                </figcaption>
-              </figure>
-            );
-          })}
-        </section>
-        {/* {props.latency != 0 && (
+        {Object.entries(colors).map(([color, available]) => {
+          const isPlayerColor = color === props.color;
+          return (
+            <figure
+              key={color}
+              onClick={() => available && props.setColor(color)}
+              style={{
+                boxSizing: "border-box",
+                width: 50,
+                height: 50,
+                margin: 15,
+                borderRadius: "50%",
+                background: color,
+                transform:
+                  isPlayerColor || !available
+                    ? `scale(${isPlayerColor ? 1.2 : 0.8})`
+                    : undefined,
+                transition:
+                  "transform 150ms ease-out, box-shadow 150ms ease-out, opacity 75ms ease-out",
+                opacity: isPlayerColor || available ? 1 : 0.2,
+                boxShadow: isPlayerColor
+                  ? "inset 0 0 0 5px rgba(0,0,0,0.1)"
+                  : "none"
+              }}
+            >
+              <figcaption style={{ visibility: "hidden" }}>{color}</figcaption>
+            </figure>
+          );
+        })}
+      </section>
+      {/* {props.latency != 0 && (
           <section style={{fontWeight: 900, margin: "1em 0"}}>
             Connection delay{" "}
             <strong style={{ minWidth: "3em", fontFamily: DEFAULT_FONT_FAMILY_MONOSPACE, color:props.latency < 30
@@ -210,11 +212,29 @@ function EnterCreds({
               : "red"  }}>{props.latency}ms</strong>
           </section>
         )} */}
-        <section style={{ marginTop: "1.5em" }}>
-          <Button color={props.color} disabled={!props.name} onClick={() => props.setReady(true)}>
-            Ready!
-          </Button>
-        </section>
-      </article>
+      <section style={{ marginTop: "1.5em" }}>
+        <Button
+          color={props.color}
+          disabled={!props.name}
+          onClick={() => props.setReady(true)}
+        >
+          Ready!
+        </Button>
+      </section>
+    </article>
   );
 }
+
+const Latency = ({ latency }: { latency?: number }) =>
+  latency ? (
+    <span
+      style={{
+        position: "absolute",
+        top: 0,
+        right: 0,
+        WebkitUserSelect: "none"
+      }}
+    >
+      {latency} ms
+    </span>
+  ) : null;

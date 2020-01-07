@@ -3,6 +3,7 @@ import Game from "./lobby/Game";
 import Client from "./client/Client";
 import LobbyConnection from "./connection/LobbyConnection";
 import Lobby from "./lobby/Lobby";
+import Banger from "./Banger";
 
 const getHashValue = () =>
   location.hash.startsWith("#") ? location.hash.substring(1) : location.hash;
@@ -33,7 +34,18 @@ export default function App() {
     if (location.hash.length > 0) {
       return <Client lobbyName={hash} />;
     }
-    return <></>;
+    return (
+      <Banger startingEm={10}>
+        New{" "}
+        <a
+          href={`/#lobby/${Math.random()
+            .toString(36)
+            .substring(8)}`}
+        >
+          Lobby
+        </a>
+      </Banger>
+    );
   }, [hashValue]);
 
   return <InnerComponent />;
