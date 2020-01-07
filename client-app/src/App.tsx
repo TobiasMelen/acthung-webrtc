@@ -38,7 +38,7 @@ export default function App() {
       <Banger startingEm={10}>
         New{" "}
         <a
-          href={`/#lobby/${Math.random()
+          href={`#lobby/${Math.random()
             .toString(36)
             .substring(8)}`}
         >
