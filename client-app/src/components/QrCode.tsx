@@ -1,6 +1,6 @@
 import Qr from "qrcode-svg";
 import React, { useEffect, useState } from "react";
-import { inlineThrow } from "./utility";
+import { inlineThrow } from "../utility";
 type Props = {
   style?: React.CSSProperties;
   colorScheme?: "onDarkBg" | "onWhiteBg";

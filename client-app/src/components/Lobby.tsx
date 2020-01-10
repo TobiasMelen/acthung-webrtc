@@ -1,19 +1,15 @@
-import React, { useCallback, useEffect, useState, useMemo } from "react";
-import { LobbyPlayer } from "./Lobby";
-import LobbyLayout from "./LobbyLayout";
-import GameRound from "./GameRound";
-import Waiting from "./Waiting";
-import useSecondTicker from "../useSecondTicker";
-import Banger from "../Banger";
-import QrCode from "../QrCode";
+import React, { useEffect, useState } from "react";
 import { ALL_COLORS } from "../constants";
+import useLobbyConnection from "../hooks/useConnectionForLobby";
+import useSecondTicker from "../hooks/useSecondTicker";
+import useStateForLobby, { LobbyPlayer } from "../hooks/useStateForLobby";
+import Banger from "./Banger";
+import GameRound from "./GameRound";
+import Layout from "./Layout";
+import QrCode from "./QrCode";
+import Waiting from "./Waiting";
 
 const winningScore = 20;
-
-type Props = {
-  players: LobbyPlayer[];
-  lobbyName: string;
-};
 
 type GameState =
   | { type: "waiting" }
@@ -23,7 +19,19 @@ type GameState =
   | { type: "roundOver"; winner?: LobbyPlayer }
   | { type: "gameOver"; winner: LobbyPlayer };
 
-export default function Game({ players, lobbyName }: Props) {
+export default function Lobby({ lobbyName }: { lobbyName: string }) {
+  const connections = useLobbyConnection(lobbyName);
+  const players = useStateForLobby(connections);
+  return <Game lobbyName={lobbyName} players={players} />;
+}
+
+export function Game({
+  lobbyName,
+  players
+}: {
+  lobbyName: string;
+  players: LobbyPlayer[];
+}) {
   const [gameState, setGameState] = useState<GameState>({ type: "waiting" });
   const countdown = useSecondTicker();
   useEffect(() => {
@@ -121,16 +129,16 @@ export default function Game({ players, lobbyName }: Props) {
     }
     case "playing": {
       return (
-        <LobbyLayout>
+        <Layout>
           <GameRound input={gameInput} run={gameState.running}>
             <FixedStats players={players} url={url} />
           </GameRound>
-        </LobbyLayout>
+        </Layout>
       );
     }
     case "roundOver": {
       return (
-        <LobbyLayout>
+        <Layout>
           <Banger key="round-over" startingEm={30}>
             {gameState.winner != null ? (
               <span style={{ color: gameState.winner.color }}>
@@ -141,7 +149,7 @@ export default function Game({ players, lobbyName }: Props) {
             )}{" "}
             survives
           </Banger>
-        </LobbyLayout>
+        </Layout>
       );
     }
     case "gameOver": {
@@ -194,9 +202,7 @@ const DisplayCountDown = ({
       style={{ maxWidth: "60%" }}
     >
       {children}
-      <span style={{ display: "inline-block", width: "0.8em" }}>
-        {count}
-      </span>
+      <span style={{ display: "inline-block", width: "0.8em" }}>{count}</span>
     </Banger>
   );
 };
@@ -209,44 +215,46 @@ const FixedStats = ({
   url: string;
 }) => {
   return (
+    <div
+      style={{
+        position: "absolute",
+        zIndex: -1,
+        right: 0,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        height: "100%"
+      }}
+    >
       <div
         style={{
-          position: "absolute",
-          zIndex: -1,
-          right: 0,
+          flexGrow: 1,
           display: "flex",
-          flexDirection: "column",
           justifyContent: "center",
-          height: "100%"
+          flexDirection: "column",
+          alignItems: "flex-end"
         }}
       >
-        <div
-          style={{
-            flexGrow: 1,
-            display: "flex",
-            justifyContent: "center",
-            flexDirection: "column",
-            alignItems: "flex-end"
-          }}
-        >
-          {players.map(player => (
-            <div
-              style={{
-                color: player.color,
-                textAlign: "right",
-                margin: "0 1.5em",
-                paddingBottom: "2em"
-              }}
-            >
-              <div style={{ fontSize: "5.2em" }}>{player.score}</div>
-              <div style={{ fontSize: "1.2em", whiteSpace: "nowrap" }}>
-                {player.name}
-              </div>
+        {players.map(player => (
+          <div
+            style={{
+              color: player.color,
+              textAlign: "right",
+              margin: "0 1.5em",
+              paddingBottom: "2em"
+            }}
+          >
+            <div style={{ fontSize: "5.2em" }}>{player.score}</div>
+            <div style={{ fontSize: "1.2em", whiteSpace: "nowrap" }}>
+              {player.name}
             </div>
-          ))}
-        </div>
-        {ALL_COLORS.length > players.length && (
+          </div>
+        ))}
+      </div>
+      {ALL_COLORS.length > players.length && (
         <QrCode
+          colorScheme="onWhiteBg"
+          padding={2}
           style={{
             width: 200,
             height: 200,
@@ -256,6 +264,6 @@ const FixedStats = ({
           {url}
         </QrCode>
       )}
-      </div>
+    </div>
   );
 };

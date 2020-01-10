@@ -5,8 +5,8 @@ import React, {
   useMemo,
   forwardRef
 } from "react";
-import { useMemoMerge } from "./useMemoMerge";
-import { DEFAULT_COLOR, DEFAULT_FONT_FAMILY } from "./constants";
+import { useMemoMerge } from "../hooks/useMemoMerge";
+import { DEFAULT_COLOR, DEFAULT_FONT_FAMILY } from "../constants";
 
 const buttonStyle = (color: string, disabled?: boolean): CSSProperties => ({
   border: `5px solid ${color}`,

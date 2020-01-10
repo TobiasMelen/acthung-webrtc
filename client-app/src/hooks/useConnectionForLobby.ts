@@ -1,25 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createRTCPeerConnection } from "./commonConnections";
 import useSignalClient from "./useSignalClient";
 import {
   createMessageChannelToPlayer,
   MessageChannelToPlayer
 } from "../messaging/dataChannelMessaging";
+import { DEFAULT_RTC_PEER_CONFIG } from "../constants";
 
 export type PlayerConnections = {
   [id: string]: MessageChannelToPlayer;
-};
-
-type Props = {
-  lobbyName: string;
-  children: (clientConnections: PlayerConnections) => JSX.Element;
 };
 
 type OfferMessage = { from?: string; data: RTCSessionDescriptionInit };
 
 type CandidateMessage = { from?: string; data: RTCIceCandidateInit | {} };
 
-export default function LobbyConnection({ lobbyName, children }: Props) {
+export default function useLobbyConnection(lobbyName: string) {
   const [clientConnections, setClientConnections] = useState<{
     [id: string]: [RTCPeerConnection, MessageChannelToPlayer];
   }>({});
@@ -43,7 +38,10 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
             acc[key] = connections[key];
           } else {
             //stale connection, try closing everything if it still is around.
-            console.log("discarding connection in state", staleConnection.iceConnectionState)
+            console.log(
+              "discarding connection in state",
+              staleConnection.iceConnectionState
+            );
             try {
               connections[key][1].destroy();
             } catch (err) {
@@ -79,7 +77,7 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
         if (data.type !== "offer" || offerFrom == null) {
           return;
         }
-        const clientConnection = createRTCPeerConnection();
+        const clientConnection = new RTCPeerConnection(DEFAULT_RTC_PEER_CONFIG);
         clientConnection.ondatachannel = onClientDataChannel(
           clientConnection,
           offerFrom
@@ -121,5 +119,5 @@ export default function LobbyConnection({ lobbyName, children }: Props) {
     [clientConnections]
   );
 
-  return children(playerConnections);
+  return playerConnections;
 }

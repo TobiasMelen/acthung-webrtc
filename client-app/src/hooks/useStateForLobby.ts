@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { PlayerConnections } from "../connection/LobbyConnection";
-import useEffectWithDeps from "../useEffectWithDeps";
+import { PlayerConnections } from "./useConnectionForLobby";
+import useEffectWithDeps from "./useEffectWithDeps";
 import { ALL_COLORS } from "../constants";
 import { extractObjectDiff } from "../utility";
 
@@ -14,10 +14,6 @@ type PlayerFunctions = {
 
 export type LobbyPlayer = PlayerState & PlayerFunctions & { id: string };
 
-type Props = {
-  clientConnections: PlayerConnections;
-  children(players: LobbyPlayer[]): JSX.Element;
-};
 
 const getColorAvailability = (assignedColors: string[] = []) =>
   ALL_COLORS.reduce((acc, color) => {
@@ -28,7 +24,7 @@ const getColorAvailability = (assignedColors: string[] = []) =>
 /*
  * The Lobby component is responsible for converting webrtc channels into player objects with state and client messaging.
  */
-export default function Lobby({ clientConnections, children }: Props) {
+export default function useStateForLobby(clientConnections: PlayerConnections) {
   const createPlayerModifier = (playerKey: string) => (
     fn: (prev: LobbyPlayer) => LobbyPlayer
   ) =>
@@ -100,7 +96,7 @@ export default function Lobby({ clientConnections, children }: Props) {
             currentConnection !== prevConnections[connKey]
           ) {
             currentConnection.on("setColor", color => {
-                modifyPlayer(player => ({ ...player, color }));
+              modifyPlayer(player => ({ ...player, color }));
             });
             currentConnection.on("setName", name => {
               modifyPlayer(player => ({ ...player, name }));
@@ -183,5 +179,5 @@ export default function Lobby({ clientConnections, children }: Props) {
 
   const players = useMemo(() => Object.values(playerStates), [playerStates]);
 
-  return children(players);
+  return players;
 }

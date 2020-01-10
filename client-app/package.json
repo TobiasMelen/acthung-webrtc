@@ -11,6 +11,13 @@
   "browserslist": [
     "last 1 Chrome version"
   ],
+  "dependencies": {
+    "qrcode-svg": "^1.1.0",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "socket.io-client": "^2.3.0",
+    "uuid": "^3.3.3"
+  },
   "devDependencies": {
     "@types/jest": "^24.0.25",
     "@types/qrcode-svg": "^1.0.0",
@@ -26,12 +33,5 @@
   },
   "prettier": {
     "lineWidth": 90
-  },
-  "dependencies": {
-    "qrcode-svg": "^1.1.0",
-    "react": "^16.12.0",
-    "react-dom": "^16.12.0",
-    "socket.io-client": "^2.3.0",
-    "uuid": "^3.3.3"
   }
 }

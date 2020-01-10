@@ -1,9 +1,7 @@
-import React, { useCallback, useState, useEffect } from "react";
-import Game from "./lobby/Game";
-import Client from "./client/Client";
-import LobbyConnection from "./connection/LobbyConnection";
-import Lobby from "./lobby/Lobby";
+import React, { useCallback, useEffect, useState } from "react";
 import Banger from "./Banger";
+import Player from "./Player";
+import Lobby from "./Lobby";
 
 const getHashValue = () =>
   location.hash.startsWith("#") ? location.hash.substring(1) : location.hash;
@@ -21,18 +19,10 @@ export default function App() {
     const hash = hashValue;
     if (hash.startsWith("lobby/")) {
       const lobbyName = hash.substring("lobby/".length);
-      return (
-        <LobbyConnection lobbyName={lobbyName}>
-          {connections => (
-            <Lobby clientConnections={connections}>
-              {players => <Game players={players} lobbyName={lobbyName} />}
-            </Lobby>
-          )}
-        </LobbyConnection>
-      );
+      return <Lobby lobbyName={lobbyName} />;
     }
     if (location.hash.length > 0) {
-      return <Client lobbyName={hash} />;
+      return <Player lobbyName={hash} />;
     }
     return (
       <Banger startingEm={10}>

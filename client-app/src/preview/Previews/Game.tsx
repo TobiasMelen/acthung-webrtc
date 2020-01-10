@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import Game from "../../lobby/Game";
 import useMockPlayers from "../useMockPlayers";
+import { Game } from "../../components/Lobby";
 
 export const props = {
   numberOfPlayers: 4,

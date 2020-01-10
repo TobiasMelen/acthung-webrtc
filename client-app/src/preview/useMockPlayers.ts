@@ -1,7 +1,7 @@
-import { LobbyPlayer } from "../lobby/Lobby";
+import { LobbyPlayer } from "../hooks/useStateForLobby";
 import { useState, useEffect } from "react";
 import { ALL_COLORS } from "../constants";
-import useEffectWithDeps from "../useEffectWithDeps";
+import useEffectWithDeps from "../hooks/useEffectWithDeps";
 
 type Options = {
   numberOfPlayers?: number;

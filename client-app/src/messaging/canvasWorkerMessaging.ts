@@ -22,7 +22,7 @@ const messagesToWorker = {
 
 const messageFromWorker = {
   snakeCollision: passValueConverter,
-  canvasCreated: passValueConverter,
+  canvasCreated: passValueConverter
 };
 
 function setupWorker(worker: Worker) {
@@ -33,6 +33,10 @@ function setupWorker(worker: Worker) {
     ) => void,
     triggerReceive(trigger) {
       worker.onmessage = ev => trigger(ev.data);
+    },
+    destroy() {
+      worker.onmessage = () => {};
+      worker.terminate();
     }
   });
 }

@@ -1,6 +1,6 @@
 import React, { ComponentProps, CSSProperties, useMemo } from "react";
-import { useMemoMerge } from "../useMemoMerge";
-import useMediaMatch, { MediaQueryMatch } from "../useMediaMatch";
+import { useMemoMerge } from "../hooks/useMemoMerge";
+import useMediaMatch, { MediaQueryMatch } from "../hooks/useMediaMatch";
 
 const createContainerStyle = (centered: boolean): CSSProperties => ({
   width: "100vw",

@@ -1,9 +1,6 @@
-import Game from "./Game";
-import LobbyLayout, { LobbyContent } from "./LobbyLayout";
-import { MainHeading, SubHeading } from "../Layout";
-import QrCode from "../QrCode";
-import React, { CSSProperties, useState, useEffect } from "react";
-import FlexGrowItem from "../FlexGrowItem";
+import React, { CSSProperties, useEffect, useState } from "react";
+import Layout from "./Layout";
+import QrCode from "./QrCode";
 
 type Props = {
   url: string;
@@ -19,7 +16,7 @@ const verticalFlex: CSSProperties = {
 
 export default function Waiting({ url, players }: Props) {
   return (
-    <LobbyLayout>
+    <Layout>
       <div style={{ width: "15%" }} />
       <div
         style={{
@@ -28,6 +25,8 @@ export default function Waiting({ url, players }: Props) {
         }}
       >
         <QrCode
+          colorScheme="onWhiteBg"
+          padding={2}
           style={{
             maxWidth: 550,
             maxHeight: 550,
@@ -60,7 +59,7 @@ export default function Waiting({ url, players }: Props) {
           <PlayerItem key={player.id} {...player} />
         ))}
       </div>
-    </LobbyLayout>
+    </Layout>
   );
 }
 
@@ -81,7 +80,7 @@ const PlayerItem = (player: Props["players"][0]) => {
       }}
       key={player.id}
     >
-      <SubHeading
+      <h2
         style={{
           color: player.color,
           fontSize: "3em",
@@ -89,7 +88,7 @@ const PlayerItem = (player: Props["players"][0]) => {
         }}
       >
         {player.name} {player.ready ? <small>👍</small> : "  "}
-      </SubHeading>
+      </h2>
     </div>
   );
 };

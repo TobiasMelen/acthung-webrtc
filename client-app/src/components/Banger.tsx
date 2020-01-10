@@ -6,9 +6,9 @@ import {
   useEffect,
   useCallback
 } from "react";
-import PlayerLayout from "./client/PlayerLayout";
+import PlayerLayout from "./Layout";
 import React from "react";
-import useEffectWithDeps from "./useEffectWithDeps";
+import useEffectWithDeps from "../hooks/useEffectWithDeps";
 
 const style: CSSProperties = {
   textAlign: "center",

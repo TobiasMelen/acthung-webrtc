@@ -1,4 +1,4 @@
-import { useMemoMerge } from "../useMemoMerge";
+import { useMemoMerge } from "../hooks/useMemoMerge";
 import React, { useMemo, CSSProperties, forwardRef } from "react";
 import { DEFAULT_COLOR, DEFAULT_FONT_FAMILY } from "../constants";
 

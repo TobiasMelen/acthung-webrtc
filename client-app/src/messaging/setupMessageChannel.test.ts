@@ -23,7 +23,8 @@ const sender = setupMessageChannel({
   },
   triggerReceive(trigger) {
     emitter.on("messageToSender", trigger);
-  }
+  },
+  destroy() {}
 })(messages, messages);
 
 const receiver = setupMessageChannel({
@@ -32,7 +33,8 @@ const receiver = setupMessageChannel({
   },
   triggerReceive(trigger) {
     emitter.on("messageToReceiver", trigger);
-  }
+  },
+  destroy() {}
 })(messages, messages, "bounce");
 
 test("Number is sent over message channel", done => {

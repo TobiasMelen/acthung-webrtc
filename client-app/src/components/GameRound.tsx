@@ -1,4 +1,4 @@
-import createSnakeCanvas, { SnakeInput } from "./createSnakeCanvas";
+import createSnakeCanvas, { SnakeInput } from "../canvas/createSnakeCanvas";
 import React, { useRef, useEffect, CSSProperties } from "react";
 
 type Props = {

@@ -1,4 +1,4 @@
-import Banger from "../../Banger";
+import Banger from "../../components/Banger";
 import React from "react";
 
 export const title = "Banger";

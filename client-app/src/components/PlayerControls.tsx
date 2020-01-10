@@ -6,8 +6,8 @@ import {
 } from "react";
 import React from "react";
 import Triangle, { TriangleDirection } from "./Triangle";
-import useMediaMatch from "../useMediaMatch";
-import PlayerLayout from "./PlayerLayout";
+import useMediaMatch from "../hooks/useMediaMatch";
+import PlayerLayout from "./Layout";
 
 type Props = PropsWithChildren<{
   latency: number;
@@ -15,7 +15,7 @@ type Props = PropsWithChildren<{
   setTurn(turn: number): void;
 }>;
 
-export default function SnakeControls({ setTurn, color, children }: Props) {
+export default function PlayerControls({ setTurn, color, children }: Props) {
   const [currentTurn, setCurrentTurn] = useState(0);
   const [minusPressed, setMinusPressed] = useState(false);
   const [plusPressed, setPlusPressed] = useState(false);
