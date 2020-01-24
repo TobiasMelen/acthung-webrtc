@@ -4,7 +4,11 @@ import {
   MessageChannelToLobby,
   createMessageChannelToLobby
 } from "../messaging/dataChannelMessaging";
-import { SIGNAL_CLIENT_DEFAULT_PARAMS, DEFAULT_RTC_PEER_CONFIG } from "../constants";
+import {
+  SIGNAL_CLIENT_DEFAULT_PARAMS,
+  DEFAULT_RTC_PEER_CONFIG
+} from "../constants";
+import io from "socket.io-client";
 
 type Props = {
   lobbyName: string;
@@ -95,7 +99,7 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
         if (data.type === "answer") {
           await peerConnection.setRemoteDescription(data);
         } else if ("candidate" in data) {
-          peerConnection.addIceCandidate(data);
+          await peerConnection.addIceCandidate(data);
         }
       });
     });

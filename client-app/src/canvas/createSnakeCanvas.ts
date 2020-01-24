@@ -10,9 +10,9 @@ export default function createSnakeCanvas(
   container: HTMLElement,
   snakeInputs: SnakeInput[],
   {
-    snakeSpeed = 2.2,
+    snakeSpeed = 3.3,
     lineWidth = 8,
-    turnRadius = 0.04,
+    turnRadius = 0.05,
     startPositionSpread = 0.5,
     startingHoleChancePercantage = -5,
     holeDuration = 10,
