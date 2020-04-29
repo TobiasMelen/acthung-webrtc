@@ -32,14 +32,14 @@ export default function useSecondTicker(seconds: number = 0) {
     [pause]
   );
   const tick = useCallback(() => {
-    setSecondsLeft(secondsLeft => {
+    setSecondsLeft((secondsLeft) => {
       const newValue = secondsLeft - 1 || 0;
       tickCallback.current(newValue);
       if (newValue > 0) {
         setTimeout(tick, 1000);
       } else {
         ticker.current = undefined;
-        doneCallback.current();
+        setTimeout(doneCallback.current, 0);
       }
       return newValue;
     });
@@ -51,7 +51,7 @@ export default function useSecondTicker(seconds: number = 0) {
       pause,
       isRunning: ticker.current != null,
       onDone,
-      onTick
+      onTick,
     }),
     [secondsLeft, start, pause, ticker, onDone, onTick]
   );

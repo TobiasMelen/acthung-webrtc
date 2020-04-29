@@ -8,8 +8,8 @@
  */
 
 export type Converter<TResult> = {
-  serialize(result: TResult): string;
-  deserialize(input: string): TResult;
+  serialize(result: TResult): string | void;
+  deserialize(input?: string): TResult;
 };
 
 export type ConverterCollection = Record<string, Converter<any>>;
@@ -60,7 +60,10 @@ export default function setupMessageChannel<
     const bounceSet = new Set(bounce);
     const listeners = new Map<keyof TReceive, Function[]>();
     //bind a single event listener to "outer event" and filter on serialized message type.
-    channelHooks.triggerReceive(input => {
+    channelHooks.triggerReceive((input) => {
+      if (typeof input !== "string") {
+        return;
+      }
       const indexOfMessageSeparator = input.indexOf(";");
       const messageType =
         indexOfMessageSeparator && input.substring(0, indexOfMessageSeparator);
@@ -79,7 +82,7 @@ export default function setupMessageChannel<
         const messageData = receive[messageType]?.deserialize(
           input.substring(indexOfMessageSeparator + 1)
         );
-        messageListeners.forEach(listener => listener(messageData));
+        messageListeners.forEach((listener) => listener(messageData));
       }
     });
     return {
@@ -99,7 +102,7 @@ export default function setupMessageChannel<
           listeners.get(type)?.splice(fnIndex, 1);
         }
       },
-      destroy: channelHooks.destroy
+      destroy: channelHooks.destroy,
     };
   };
 }

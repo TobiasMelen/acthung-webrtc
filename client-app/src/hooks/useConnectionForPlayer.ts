@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
-import uuid from "uuid/v4";
+import { v4 as uuid } from "uuid";
 import {
   MessageChannelToLobby,
-  createMessageChannelToLobby
+  createMessageChannelToLobby,
 } from "../messaging/dataChannelMessaging";
 import {
   SIGNAL_CLIENT_DEFAULT_PARAMS,
-  DEFAULT_RTC_PEER_CONFIG
+  DEFAULT_RTC_PEER_CONFIG,
 } from "../constants";
 import io from "socket.io-client";
 
@@ -38,8 +38,8 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
       ...SIGNAL_CLIENT_DEFAULT_PARAMS({
         query: {
           joinLobby: lobbyName,
-          from: playerId
-        }
+          from: playerId,
+        },
       })
     );
 
@@ -48,19 +48,19 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
 
       const channel = peerConnection.createDataChannel("Client data channel", {
         maxRetransmits: 1,
-        ordered: false
+        ordered: false,
       });
       channel.onopen = () => {
         const handles = createMessageChannelToLobby(peerConnection, channel);
         setLobbyMessageChannel(handles);
       };
 
-      peerConnection.onicecandidate = event => {
+      peerConnection.onicecandidate = (event) => {
         if (event.candidate != null) {
           signalClient.send({
             to: lobbyName,
             from: playerId,
-            data: event.candidate.toJSON()
+            data: event.candidate.toJSON(),
           });
         }
       };
@@ -69,7 +69,7 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
         //clear disconnect timeout if set.
         clearTimeout(peerDisconnectTimeout);
         const disconnect = () =>
-          setLobbyMessageChannel(channel => {
+          setLobbyMessageChannel((channel) => {
             channel?.destroy();
             return undefined;
           });

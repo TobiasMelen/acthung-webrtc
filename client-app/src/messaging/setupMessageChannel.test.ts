@@ -2,7 +2,7 @@ import setupMessageChannel from "./setupMessageChannel";
 import {
   numberConverter,
   booleanConverter,
-  passValueConverter,
+  stringConverter,
   jsonConverter
 } from "./valueConverters";
 import { EventEmitter } from "events";
@@ -10,9 +10,9 @@ import { EventEmitter } from "events";
 const messages = {
   testNr: numberConverter,
   testBool: booleanConverter,
-  testStr: passValueConverter,
+  testStr: stringConverter,
   testJSON: jsonConverter,
-  bounce: passValueConverter
+  bounce: stringConverter
 };
 
 const emitter = new EventEmitter();

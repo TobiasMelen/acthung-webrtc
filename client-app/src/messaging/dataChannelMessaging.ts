@@ -1,6 +1,6 @@
 import {
   jsonConverter,
-  passValueConverter,
+  stringConverter,
   booleanConverter,
   numberConverter
 } from "./valueConverters";
@@ -14,9 +14,9 @@ const messagesFromLobby = {
 };
 
 const messagesFromPlayer = {
-  setColor: passValueConverter,
+  setColor: stringConverter,
   setReady: booleanConverter,
-  setName: passValueConverter,
+  setName: stringConverter,
   turn: numberConverter,
   ping: numberConverter
 };

@@ -1,8 +1,9 @@
-import { jsonConverter, passValueConverter } from "./valueConverters";
-import setupMessageChannel, {
-  ConverterCollection,
-  Converter
-} from "./setupMessageChannel";
+import {
+  jsonConverter,
+  voidConverter,
+  stringConverter,
+} from "./valueConverters";
+import setupMessageChannel, { Converter } from "./setupMessageChannel";
 
 const messagesToWorker = {
   turn: {
@@ -12,39 +13,41 @@ const messagesToWorker = {
     deserialize(value: string) {
       const split = value.split(";");
       return { id: split[0], turn: parseFloat(split[1]) };
-    }
+    },
   },
-  run: passValueConverter,
-  stop: passValueConverter,
-  destroy: passValueConverter,
-  setup: jsonConverter
+  run: voidConverter,
+  stop: voidConverter,
+  destroy: voidConverter,
+  inputSnakeData: jsonConverter as Converter<{ id: string; color: string }>,
 };
 
 const messageFromWorker = {
-  snakeCollision: passValueConverter,
-  canvasCreated: passValueConverter
+  snakeCollision: stringConverter,
+  canvasCreated: voidConverter,
 };
 
-function setupWorker(worker: Worker) {
+function hijackWorker(worker: Worker | DedicatedWorkerGlobalScope) {
+  const workerOriginalHandler = worker.onmessage;
   return setupMessageChannel({
-    send: worker.postMessage as (
-      message: any,
-      transfer?: (Transferable | OffscreenCanvas)[]
-    ) => void,
+    send: worker.postMessage.bind(worker),
     triggerReceive(trigger) {
-      worker.onmessage = ev => trigger(ev.data);
+      worker.onmessage = (ev) => trigger(ev.data);
     },
     destroy() {
-      worker.onmessage = () => {};
-      worker.terminate();
-    }
+      worker.onmessage = workerOriginalHandler;
+      // terminate();
+    },
   });
 }
 
-export function createChannelToWorker(worker: Worker) {
-  return setupWorker(worker)(messagesToWorker, messageFromWorker);
+export function createChannelToWorker(
+  ...params: Parameters<typeof hijackWorker>
+) {
+  return hijackWorker(...params)(messagesToWorker, messageFromWorker);
 }
 
-export function createChannelFromWorker(worker: Worker) {
-  return setupWorker(worker)(messageFromWorker, messagesToWorker);
+export function createChannelFromWorker(
+  ...params: Parameters<typeof hijackWorker>
+) {
+  return hijackWorker(...params)(messageFromWorker, messagesToWorker);
 }
