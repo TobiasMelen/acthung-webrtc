@@ -22,8 +22,10 @@ export default function snakeGameContext(
 ) {
   {
     const context =
-      canvas.getContext("2d", {desynchronized
-        : true, willReadFrequently: true}) as OffscreenCanvasRenderingContext2D ??
+      (canvas.getContext("2d", {
+        desynchronized: true,
+        willReadFrequently: true,
+      }) as OffscreenCanvasRenderingContext2D) ??
       (() => {
         throw new Error("Could not get Snake canvas 2d context");
       })();
@@ -33,7 +35,8 @@ export default function snakeGameContext(
     }
     // context.globalCompositeOperation = "destination-over";
 
-    const createNewSnake = () => ({
+    const createNewSnake = (input: SnakeInput) => ({
+      ...input,
       hasCollided: false,
       turn: 0,
       direction: Math.round(Math.random() * 360),
@@ -54,12 +57,13 @@ export default function snakeGameContext(
 
     //Create or update snake and return turntrigger
     const inputSnakeData = (input: SnakeInput) => {
-      let index =
-        snakes.findIndex((snake) => snake.id === input.id) ?? snakes.length;
-      const snake = { ...(snakes[index] ?? createNewSnake()), ...input };
-      snakes[index >= 0 ? index : 0] = snake;
+      let snake = snakes.find((snake) => snake.id === input.id);
+      if(snake == null){
+        snake = createNewSnake(input);
+        snakes.push(snake);
+      }
       return (turn: number) => {
-        snake.turn = turn;
+        snake!.turn = turn;
       };
     };
 
@@ -83,19 +87,19 @@ export default function snakeGameContext(
       }
 
       const willCollide =
-        checkCollision &&
-        (snake.position.x < 0 ||
-          snake.position.x > canvas.width ||
-          snake.position.y < 0 ||
-          snake.position.y > canvas.height);
-        //   context.getImageData(
-        //     snake.position.x +
-        //       (snakeSpeed + lineWidth / 2) * Math.cos(snake.direction),
-        //     snake.position.y +
-        //       (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
-        //     1,
-        //     1
-        //   ).data[3] !== 0
+        (checkCollision &&
+          (snake.position.x < 0 ||
+            snake.position.x > canvas.width ||
+            snake.position.y < 0 ||
+            snake.position.y > canvas.height)) ||
+        context.getImageData(
+          snake.position.x +
+            (snakeSpeed + lineWidth / 2) * Math.cos(snake.direction),
+          snake.position.y +
+            (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
+          1,
+          1
+        ).data[3] !== 0;
       if (willCollide) {
         snake.hasCollided = true;
         snake.onCollision();

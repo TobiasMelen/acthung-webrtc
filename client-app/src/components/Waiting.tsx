@@ -17,7 +17,7 @@ const verticalFlex: CSSProperties = {
 export default function Waiting({ url, players }: Props) {
   return (
     <Layout>
-      <div style={{ width: "15%" }} />
+      <div />
       <div
         style={{
           width: "50%",
@@ -50,9 +50,9 @@ export default function Waiting({ url, players }: Props) {
       <div
         style={{
           ...verticalFlex,
-          width: "15%",
-          flexGrow: players.length ? 1 : 0,
-          transition: "flex-grow 250ms ease-out"
+          width: 0,
+          flexGrow: players.length ? 0.5 : 0,
+          transition: "flex-grow 500ms ease-in"
         }}
       >
         {players.map(player => (
@@ -73,9 +73,9 @@ const PlayerItem = (player: Props["players"][0]) => {
       style={{
         opacity: rendered ? 1 : 0,
         margin: "1.2em 0",
-        transition: "transform 150ms ease-out, opacity 150ms ease-out",
+        transition: "transform 150ms ease-in, opacity 150ms ease-in",
         transform: player.ready ? "scale(1.1) translateX(5%)" : undefined,
-        animation: "fadeIn 250ms ease-out, fromRight 250ms ease-out",
+        animation: "fadeIn 250ms ease-in, fromRight 500ms ease-in",
         minWidth: "7em"
       }}
       key={player.id}
@@ -84,7 +84,8 @@ const PlayerItem = (player: Props["players"][0]) => {
         style={{
           color: player.color,
           fontSize: "3em",
-          transition: "color 150ms"
+          transition: "color 150ms",
+          whiteSpace: "nowrap"
         }}
       >
         {player.name} {player.ready ? <small>👍</small> : "  "}

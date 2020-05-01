@@ -16,12 +16,6 @@ const createOffScreenGame: Async<typeof snakeGameContext> = async (
   worker.postMessage(offscreenCanvas, [offscreenCanvas]);
   const channel = createChannelToWorker(worker);
 
-  //HAHA, you little rebel-coder you. Are resolved promises noop-rejections? Who defined that?
-  //Yes i'm writing snarky comments to my past self, so what? I'm insane.
-  // await new Promise((res, rej) => {
-  //   window.setTimeout(rej, 500);
-  //   channel.on("canvasCreated", res);
-  // });
   //Create single listener for snake collisioners and use dict to store all snakes.
   const snakeCollisionListeners = new Map<string, Function>();
   channel.on("snakeCollision", (id) => {

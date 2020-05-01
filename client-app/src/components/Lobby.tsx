@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { ALL_COLORS } from "../constants";
 import useLobbyConnection from "../hooks/useConnectionForLobby";
 import useSecondTicker from "../hooks/useSecondTicker";
@@ -8,6 +8,10 @@ import GameRound from "./GameRound";
 import Layout from "./Layout";
 import QrCode from "./QrCode";
 import Waiting from "./Waiting";
+import {
+  GameSettingsContext,
+  GameSettingsProvider,
+} from "./GameSettingsContext";
 
 const winningScore = 20;
 
@@ -22,12 +26,16 @@ type GameState =
 export default function Lobby({ lobbyName }: { lobbyName: string }) {
   const connections = useLobbyConnection(lobbyName);
   const players = useStateForLobby(connections);
-  return <Game lobbyName={lobbyName} players={players} />;
+  return (
+    <GameSettingsProvider>
+      <Game lobbyName={lobbyName} players={players} />
+    </GameSettingsProvider>
+  );
 }
 
 export function Game({
   lobbyName,
-  players
+  players,
 }: {
   lobbyName: string;
   players: LobbyPlayer[];
@@ -42,14 +50,14 @@ export function Game({
     if (
       gameState.type === "waiting" &&
       players.length &&
-      players.every(player => player.ready)
+      players.every((player) => player.ready)
     ) {
       let countdownRef: number;
       countdownRef = window.setTimeout(() => {
         setGameState({ type: "message", message: "Get Ready" });
         window.setTimeout(() => {
           setGameState({
-            type: "countdown"
+            type: "countdown",
           });
         }, 3000);
       }, 1000);
@@ -70,11 +78,11 @@ export function Game({
           type: "playing",
           running: true,
           joinedPlayerIds: players
-            .filter(player => player.ready)
-            .map(player => {
+            .filter((player) => player.ready)
+            .map((player) => {
               player.setState("playing");
               return player.id;
-            })
+            }),
         })
       );
     }
@@ -85,18 +93,18 @@ export function Game({
       return;
     }
     player.setState("dead");
-    const playersInGame = players.filter(player =>
+    const playersInGame = players.filter((player) =>
       gameState.joinedPlayerIds.includes(player.id)
     );
     const alivePlayers = playersInGame.filter(
-      otherPlayer => otherPlayer !== player && otherPlayer.state === "playing"
+      (otherPlayer) => otherPlayer !== player && otherPlayer.state === "playing"
     );
-    alivePlayers.forEach(otherPlayer =>
+    alivePlayers.forEach((otherPlayer) =>
       otherPlayer.setScore(otherPlayer.score + 1)
     );
     if (alivePlayers.length <= 1) {
       //We have a winner!
-      setGameState(state => ({ ...state, running: false }));
+      setGameState((state) => ({ ...state, running: false }));
       const playerWithMaxScore = playersInGame.reduce((maxPlayer, player) =>
         player.score > maxPlayer.score ? player : maxPlayer
       );
@@ -105,22 +113,25 @@ export function Game({
           ? { type: "gameOver", winner: playerWithMaxScore }
           : { type: "roundOver", winner: alivePlayers[0] };
       window.setTimeout(() => {
-        setGameState(state => (state.type === "playing" ? nextState : state));
+        setGameState((state) => (state.type === "playing" ? nextState : state));
       }, 1000);
     }
   };
 
-  const gameInput =
-    gameState.type === "playing"
-      ? players
-          .filter(player => gameState.joinedPlayerIds.includes(player.id))
-          .map(player => ({
-            id: player.id,
-            color: player.color,
-            onCollision: () => onSnakeDeath(player),
-            onTurnInput: player.onTurnInput
-          }))
-      : [];
+  const gameInput = useMemo(
+    () =>
+      gameState.type === "playing"
+        ? players
+            .filter((player) => gameState.joinedPlayerIds.includes(player.id))
+            .map((player) => ({
+              id: player.id,
+              color: player.color,
+              onCollision: () => onSnakeDeath(player),
+              onTurnInput: player.onTurnInput,
+            }))
+        : [],
+    [gameState.type, players]
+  );
 
   const url = `${window.location.protocol}//${window.location.host}${window.location.pathname}#${lobbyName}`;
   switch (gameState.type) {
@@ -174,7 +185,7 @@ export function Game({
         <>
           <FixedStats players={players} url={url} />
           <DisplayCountDown count={countdown.secondsLeft}>
-            {players.every(player => player.score === 0)
+            {players.every((player) => player.score === 0)
               ? "Game starts"
               : "Next round"}{" "}
             in{" "}
@@ -187,14 +198,11 @@ export function Game({
 
 const DisplayCountDown = ({
   count,
-  children
+  children,
 }: {
   count: number;
   children: React.ReactNode;
 }) => {
-  const [color] = useState(
-    ALL_COLORS[Math.floor(Math.random() * ALL_COLORS.length)]
-  );
   return (
     <Banger
       key="countdown"
@@ -209,7 +217,7 @@ const DisplayCountDown = ({
 
 const FixedStats = ({
   players,
-  url
+  url,
 }: {
   players: LobbyPlayer[];
   url: string;
@@ -223,7 +231,7 @@ const FixedStats = ({
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
-        height: "100%"
+        height: "100%",
       }}
     >
       <div
@@ -232,16 +240,16 @@ const FixedStats = ({
           display: "flex",
           justifyContent: "center",
           flexDirection: "column",
-          alignItems: "flex-end"
+          alignItems: "flex-end",
         }}
       >
-        {players.map(player => (
+        {players.map((player) => (
           <div
             style={{
               color: player.color,
               textAlign: "right",
               margin: "0 1.5em",
-              paddingBottom: "2em"
+              paddingBottom: "2em",
             }}
           >
             <div style={{ fontSize: "5.2em" }}>{player.score}</div>
@@ -258,7 +266,7 @@ const FixedStats = ({
           style={{
             width: 200,
             height: 200,
-            margin: "2em"
+            margin: "2em",
           }}
         >
           {url}

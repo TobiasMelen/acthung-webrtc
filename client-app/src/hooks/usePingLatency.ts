@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { MessageChannel, Converter } from "../messaging/setupMessageChannel";
 
 //This is messed up, but by keeping sending ping packages over the channel, latency is keeped consistent and low.
@@ -9,43 +9,41 @@ export default function usePingLatency(
     { ping: Converter<number> },
     { ping: Converter<number> }
   >,
-  pingIntervalMs = 100,
-  reportPingNumber = 20
+  tickRateMs = 100,
+  tickReportCount = 40
 ) {
-  const outstandingPing = useRef<boolean>(false);
-  const pingInterval = useRef<number>();
-  const pings = useRef<number[]>([]);
-  const [latency, setLatency] = useState(0);
+  const [latency, setLatency] = useState<number>();
   useEffect(() => {
     if (connection == null) {
       return;
     }
-    pingInterval.current = window.setInterval(() => {
-      if(outstandingPing.current){
+    let sentPings = 0;
+    let receivedPings = 0;
+    const pings = new Uint8Array(tickReportCount);
+    const pingInterval = window.setInterval(() => {
+      if (sentPings > receivedPings) {
         //A ping is already out, skip sending new ones until it's back.
         return;
       }
       connection.send("ping", performance.now());
-      outstandingPing.current = true;
-    }, pingIntervalMs);
-    connection.on("ping", timeStamp => {
-      outstandingPing.current = false;
-      pings.current.push(performance.now() - timeStamp);
-      if (pings.current.length >= reportPingNumber) {
+      sentPings++;
+    }, tickRateMs);
+    connection.on("ping", (timeStamp) => {
+      pings[receivedPings] = performance.now() - timeStamp;
+      receivedPings++;
+      if (receivedPings >= tickReportCount) {
         setLatency(
-          Math.round(
-            pings.current.reduce((acc, ping) => acc + ping, 0) /
-              pings.current.length
-          )
+          Math.round(pings.reduce((acc, ping) => acc + ping, 0) / receivedPings)
         );
-        pings.current = [];
+        pings.fill(0);
+        receivedPings = 0;
+        sentPings = 0;
       }
     });
     return () => {
-      window.clearInterval(pingInterval.current);
-      pings.current = [];
-      setLatency(0);
+      window.clearInterval(pingInterval);
+      setLatency(undefined);
     };
-  }, [connection, pingIntervalMs, reportPingNumber]);
+  }, [connection, tickRateMs, tickReportCount]);
   return latency;
 }
