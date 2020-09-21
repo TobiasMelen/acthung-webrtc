@@ -5,22 +5,22 @@
   "license": "MIT",
   "dependencies": {
     "socket.io": "^2.3.0",
-    "uws": "10.148.1"
+    "uws": "100.0.1"
   },
   "scripts": {
     "start": "babel-node index.ts --extensions \".ts\"",
     "build": "parcel build index.ts --target node --bundle-node-modules"
   },
   "devDependencies": {
-    "@babel/core": "^7.7.7",
-    "@babel/node": "^7.7.7",
-    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.7.4",
-    "@babel/plugin-proposal-optional-chaining": "^7.7.5",
-    "@babel/preset-env": "^7.7.7",
-    "@babel/preset-typescript": "^7.7.7",
-    "@types/node": "^12.12.21",
-    "@types/socket.io": "^2.1.4",
+    "@babel/core": "^7.11.6",
+    "@babel/node": "^7.10.5",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.10.4",
+    "@babel/plugin-proposal-optional-chaining": "^7.11.0",
+    "@babel/preset-env": "^7.11.5",
+    "@babel/preset-typescript": "^7.10.4",
+    "@types/node": "^14.11.1",
+    "@types/socket.io": "^2.1.11",
     "parcel-bundler": "^1.12.4",
-    "typescript": "^3.7.4"
+    "typescript": "^4.0.3"
   }
 }

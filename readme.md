@@ -1,6 +1,10 @@
 # Acthung WebRTC
 This is a wrongly spelled re-make of [Achtung die Kurve!](https://sv.wikipedia.org/wiki/Achtung,_die_Kurve!) adding support for using your phone as a gamepad by connecting from WebRTC. Uses React for non performance sensitive part and also for lobby/player state.
 
+Client app used for both server and clients is in /client-app (containing 99% of actual code).
+
+A simple signaling server for lobby RTC peer discovery is in /signaling-app (literally like 20 lines of code).
+
 ## How to play
 1. Get a pc, phone, a friend with another phone.
 2. Connect all devices to the same wifi, no TURN server is available.
