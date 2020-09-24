@@ -33,9 +33,9 @@ export const SIGNAL_CLIENT_DEFAULT_PARAMS = (
     } as SocketIOClient.ConnectOpts,
   ] as const;
 
-export const DEFAULT_RTC_PEER_CONFIG = {
+export const DEFAULT_RTC_PEER_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: ["stun:stun.l.google.com:19302"] },
-    { urls: "turn:207.154.241.68:3478" },
+    { urls: "turn:207.154.241.68:3478", username: "", credential: "" },
   ],
 };
