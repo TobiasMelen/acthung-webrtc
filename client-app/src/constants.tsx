@@ -29,10 +29,13 @@ export const SIGNAL_CLIENT_DEFAULT_PARAMS = (
     SIGNALING_URL,
     {
       transports: ["websocket"],
-      ...opts
-    } as SocketIOClient.ConnectOpts
+      ...opts,
+    } as SocketIOClient.ConnectOpts,
   ] as const;
 
 export const DEFAULT_RTC_PEER_CONFIG = {
-  iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }]
+  iceServers: [
+    { urls: ["stun:stun.l.google.com:19302"] },
+    { urls: "turn:207.154.241.68:3478" },
+  ],
 };
