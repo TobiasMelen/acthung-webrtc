@@ -19,7 +19,7 @@ export const ALL_COLORS = [
   "#ef2",
   "#d3f",
   "#f9b",
-  "#fff"
+  "#fff",
 ];
 
 export const SIGNAL_CLIENT_DEFAULT_PARAMS = (
@@ -36,6 +36,10 @@ export const SIGNAL_CLIENT_DEFAULT_PARAMS = (
 export const DEFAULT_RTC_PEER_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: ["stun:stun.l.google.com:19302"] },
-    { urls: "turn:207.154.241.68:3478", username: "", credential: "" },
+    {
+      urls: ["turn:relay.backups.cz"],
+      credential: "webrtc",
+      username: "webrtc",
+    },
   ],
 };
