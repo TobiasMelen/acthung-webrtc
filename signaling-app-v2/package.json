@@ -1,0 +1,25 @@
+{
+  "name": "acthung-webrtc-signaling-app",
+  "version": "0.1.0",
+  "description": "Websocket signaling server for lobbies",
+  "main": "index.js",
+  "repository": "https://github.com/tobiasmelen/acthung-webrtc",
+  "author": "Tobias Melen",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "node index.js",
+    "dev": "NODE_ENV=development nodemon index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^14.11.10",
+    "@types/redis": "^2.8.28",
+    "@types/ws": "^7.2.7",
+    "redis-mock": "^0.52.0",
+    "nodemon": "^2.0.5"
+  },
+  "dependencies": {
+    "redis": "^3.0.2",
+    "ws": "^7.3.1"
+  }
+}
