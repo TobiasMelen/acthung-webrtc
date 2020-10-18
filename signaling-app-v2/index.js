@@ -2,9 +2,8 @@
 const http = require("http");
 const url = require("url");
 /**@type {import("redis")} */
-const redis = require(process.env.NODE_ENV === "development"
-  ? "redis-mock"
-  : "redis");
+// @ts-ignore, redis pubsub is not working on fly, use mock instead.
+const redis = require("redis-mock");
 const { promisify } = require("util");
 const WebsocketServer = require("ws").Server;
 
