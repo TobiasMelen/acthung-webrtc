@@ -46,6 +46,7 @@ const setupPubSubSubscriber = (channel, onMessage) => {
     pubsubClient.unsubscribe(pubsubParams[0]);
   };
 };
+
 /**
  * @template {any[]} TParams
  * @param {(...params: TParams) => Promise<any>} inner*/
