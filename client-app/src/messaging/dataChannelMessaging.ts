@@ -2,7 +2,7 @@ import {
   jsonConverter,
   stringConverter,
   booleanConverter,
-  numberConverter
+  numberConverter,
 } from "./valueConverters";
 import setupMessageChannel, { Converter } from "./setupMessageChannel";
 
@@ -10,7 +10,7 @@ const messagesFromLobby = {
   playerState: jsonConverter as Converter<Partial<PlayerState>>,
   gameState: jsonConverter as Converter<Partial<GameState>>,
   ping: numberConverter,
-  err: jsonConverter
+  err: jsonConverter,
 };
 
 const messagesFromPlayer = {
@@ -18,7 +18,7 @@ const messagesFromPlayer = {
   setReady: booleanConverter,
   setName: stringConverter,
   turn: numberConverter,
-  ping: numberConverter
+  ping: numberConverter,
 };
 
 export type MessageChannelToPlayer = ReturnType<
@@ -55,13 +55,13 @@ function setupMessageDataChannel(
   dataChannel: RTCDataChannel
 ) {
   return setupMessageChannel({
-    send: msg => dataChannel.readyState === "open" && dataChannel.send(msg),
-    triggerReceive(trigger) {
-      dataChannel.addEventListener("message", ev => trigger(ev.data));
+    send: (msg) => dataChannel.readyState === "open" && dataChannel.send(msg),
+    bindReceive(receive) {
+      dataChannel.addEventListener("message", (ev) => receive(ev.data));
+      return () => {
+        dataChannel.close();
+        connection.close();
+      };
     },
-    destroy() {
-      dataChannel.close();
-      connection.close();
-    }
   });
 }

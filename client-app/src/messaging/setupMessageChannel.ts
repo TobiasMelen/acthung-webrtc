@@ -16,8 +16,7 @@ export type ConverterCollection = Record<string, Converter<any>>;
 
 type EventHooks<TExtraSendParams extends any[] = []> = {
   send(input: string, ...params: TExtraSendParams): void;
-  triggerReceive(trigger: (input: string) => void): void;
-  destroy(): void;
+  bindReceive(receive: (input: string) => void): (() => void) | void;
 };
 
 type ConverterType<
@@ -45,6 +44,8 @@ export type MessageChannel<
   destroy(): void;
 };
 
+export type BindableMessageChannel = ReturnType<typeof setupMessageChannel>;
+
 //HoF just to cut down on TS generic bloat.
 export default function setupMessageChannel<
   TExtraSendParams extends any[] = []
@@ -60,7 +61,7 @@ export default function setupMessageChannel<
     const bounceSet = new Set(bounce);
     const listeners = new Map<keyof TReceive, Function[]>();
     //bind a single event listener to "outer event" and filter on serialized message type.
-    channelHooks.triggerReceive((input) => {
+    const unbind = channelHooks.bindReceive((input) => {
       if (typeof input !== "string") {
         return;
       }
@@ -102,7 +103,22 @@ export default function setupMessageChannel<
           listeners.get(type)?.splice(fnIndex, 1);
         }
       },
-      destroy: channelHooks.destroy,
+      destroy: unbind ? unbind : () => {},
     };
+  };
+}
+
+/**Create a passthrough bridge between two sets of channelhooks */
+export function bridgeChannelHooks(
+  channelHooks1: EventHooks,
+  channelHooks2: EventHooks
+) {
+  const unbind1 = channelHooks1.bindReceive(channelHooks2.send);
+  const unbind2 = channelHooks2.bindReceive(channelHooks1.send);
+  return {
+    destroy() {
+      unbind1 && unbind1();
+      unbind2 && unbind2();
+    },
   };
 }

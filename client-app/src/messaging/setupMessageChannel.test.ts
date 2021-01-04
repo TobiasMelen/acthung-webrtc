@@ -21,20 +21,18 @@ const sender = setupMessageChannel({
   send(data) {
     emitter.emit("messageToReceiver", data);
   },
-  triggerReceive(trigger) {
+  bindReceive(trigger) {
     emitter.on("messageToSender", trigger);
   },
-  destroy() {}
 })(messages, messages);
 
 const receiver = setupMessageChannel({
   send(data) {
     emitter.emit("messageToSender", data);
   },
-  triggerReceive(trigger) {
+  bindReceive(trigger) {
     emitter.on("messageToReceiver", trigger);
   },
-  destroy() {}
 })(messages, messages, "bounce");
 
 test("Number is sent over message channel", done => {

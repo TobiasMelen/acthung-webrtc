@@ -10,7 +10,7 @@ import useMediaMatch from "../hooks/useMediaMatch";
 import PlayerLayout from "./Layout";
 
 type Props = PropsWithChildren<{
-  latency: number;
+  latency?: number;
   color: CSSProperties["color"];
   setTurn(turn: number): void;
 }>;

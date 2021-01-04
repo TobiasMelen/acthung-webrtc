@@ -1,5 +1,5 @@
 /// <reference lib="WebWorker" />
-import { createChannelFromWorker } from "../messaging/canvasWorkerMessaging";
+import { createChannelFromWorker } from "./offscreenGameMessages";
 import snakeGameContext from "./snakeGameContext";
 
 const messageHandler = (worker: DedicatedWorkerGlobalScope) => (ev: MessageEvent) => {

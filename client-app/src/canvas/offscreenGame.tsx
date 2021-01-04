@@ -1,4 +1,4 @@
-import { createChannelToWorker } from "../messaging/canvasWorkerMessaging";
+import { createChannelToWorker } from "./offscreenGameMessages";
 import snakeGameContext from "./snakeGameContext";
 
 const worker = new Worker("./offscreenGameWorker.ts");
@@ -17,9 +17,9 @@ const createOffScreenGame: Async<typeof snakeGameContext> = async (
   const channel = createChannelToWorker(worker);
 
   //Create single listener for snake collisioners and use dict to store all snakes.
-  const snakeCollisionListeners = new Map<string, Function>();
+  const snakeCollisionHandlers = new Map<string, Function>();
   channel.on("snakeCollision", (id) => {
-    snakeCollisionListeners.get(id)?.();
+    snakeCollisionHandlers.get(id)?.();
   });
 
   return {
@@ -32,9 +32,12 @@ const createOffScreenGame: Async<typeof snakeGameContext> = async (
     destroy() {
       channel.send("destroy", undefined);
     },
+    addTrackingChannel(trackingChannel){
+
+    },
     inputSnakeData({ id, color, onCollision }) {
       channel.send("inputSnakeData", { id, color });
-      snakeCollisionListeners.set(id, onCollision);
+      snakeCollisionHandlers.set(id, onCollision);
       return (turn: number) => {
         channel.send("turn", { id, turn });
       };
