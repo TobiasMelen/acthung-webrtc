@@ -34,7 +34,7 @@ export default function PlayerLayout({
 }: { centered?: boolean } & ComponentProps<"main">) {
   const containerMediaMatchStyle = useMediaMatch(containerMediaStyle);
   const containerStyle = useMemo(() => createContainerStyle(centered), [
-    centered
+    centered,
   ]);
   return (
     <main

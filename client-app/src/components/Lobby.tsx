@@ -264,8 +264,8 @@ const FixedStats = ({
           colorScheme="onWhiteBg"
           padding={2}
           style={{
-            width: 200,
-            height: 200,
+            width: 150,
+            height: 150,
             margin: "2em",
           }}
         >
