@@ -1,7 +1,7 @@
-import { LobbyPlayer } from "../hooks/useStateForLobby";
+import { LobbyPlayer } from "../src/hooks/useStateForLobby";
 import { useState, useEffect } from "react";
-import { ALL_COLORS } from "../constants";
-import useEffectWithDeps from "../hooks/useEffectWithDeps";
+import { ALL_COLORS } from "../src/constants";
+import useEffectWithDeps from "../src/hooks/useEffectWithDeps";
 
 type Options = {
   numberOfPlayers?: number;
@@ -14,13 +14,13 @@ type MockPlayer = LobbyPlayer & { hidden: boolean };
 export default function useMockPlayers({
   numberOfPlayers = ALL_COLORS.length,
   playersReady = true,
-  autoPlay = true
+  autoPlay = true,
 }: Options) {
   const modifyPlayer = (id: string) => (
     fn: (player: MockPlayer) => MockPlayer
-  ) =>
-    setPlayers(players =>
-      players.map(player => (player.id === id ? fn(player) : player))
+  ): void =>
+    setPlayers((players) =>
+      players.map((player) => (player.id === id ? fn(player) : player))
     );
   const [players, setPlayers]: [
     MockPlayer[],
@@ -39,32 +39,32 @@ export default function useMockPlayers({
           onTurnInput: () => {},
           ready: playersReady,
           score: 0,
-          setScore: score => modifier(player => ({ ...player, score })),
-          setState: state => modifier(player => ({ ...player, state })),
+          setScore: (score) => modifier((player) => ({ ...player, score })),
+          setState: (state) => modifier((player) => ({ ...player, state })),
           state: "joining",
-          hidden: !playersReady
+          hidden: !playersReady,
         } as MockPlayer;
       })
   );
 
   useEffectWithDeps(
-    prevDeps => {
+    (prevDeps) => {
       const playerOne = players[0];
       if (playerOne == null || prevDeps?.[0]?.[0] != null) {
         return;
       }
       let keydown: any;
       let keyup: any;
-      modifyPlayer("1")(player => ({
+      modifyPlayer("1")((player) => ({
         ...player,
-        onTurnInput: turn => {
+        onTurnInput: (turn) => {
           keydown = (ev: KeyboardEvent) =>
             ev.keyCode === 37 ? turn(-1) : ev.keyCode === 39 ? turn(1) : null;
           addEventListener("keydown", keydown);
           keyup = (ev: KeyboardEvent) =>
             ev.keyCode === 37 || ev.keyCode === 39 ? turn(0) : null;
           addEventListener("keyup", keyup);
-        }
+        },
       }));
       return () => {
         window.removeEventListener("keydown", keydown);
@@ -75,13 +75,13 @@ export default function useMockPlayers({
   );
 
   useEffect(() => {
-    if (!autoPlay || players.every(player => !player.hidden)) {
+    if (!autoPlay || players.every((player) => !player.hidden)) {
       return;
     }
     const showPlayer = window.setTimeout(() => {
       let shownPlayer = false;
-      setPlayers(players =>
-        players.map(player => {
+      setPlayers((players) =>
+        players.map((player) => {
           if (!shownPlayer && player.hidden) {
             shownPlayer = true;
             return { ...player, hidden: false };
@@ -96,13 +96,13 @@ export default function useMockPlayers({
   }, [players]);
 
   useEffect(() => {
-    if (!autoPlay || players.every(player => player.ready)) {
+    if (!autoPlay || players.every((player) => player.ready)) {
       return;
     }
     const readyPlayer = window.setTimeout(() => {
       let readiedPlayer = false;
-      setPlayers(players =>
-        players.map(player => {
+      setPlayers((players) =>
+        players.map((player) => {
           if (!readiedPlayer && !player.hidden && !player.ready) {
             readiedPlayer = true;
             return { ...player, ready: true };
@@ -115,5 +115,5 @@ export default function useMockPlayers({
       window.clearTimeout(readyPlayer);
     };
   }, [players]);
-  return players.filter(player => !player.hidden);
+  return players.filter((player) => !player.hidden);
 }

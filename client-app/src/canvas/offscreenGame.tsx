@@ -1,7 +1,8 @@
 import { createChannelToWorker } from "../messaging/canvasWorkerMessaging";
 import snakeGameContext from "./snakeGameContext";
+import OffscreenGameWorker from "./offscreenGameWorker?worker";
 
-const worker = new Worker("./offscreenGameWorker.ts");
+const worker = new OffscreenGameWorker();
 
 const createOffScreenGame: Async<typeof snakeGameContext> = async (
   canvas,

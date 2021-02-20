@@ -3,10 +3,16 @@ import parcelPreviews from "./Previews/*.tsx";
 import { render } from "react-dom";
 import React, { useState, useCallback, useMemo, ComponentType } from "react";
 
-const previews = parcelPreviews as Record<
-  string,
-  { title?: string; default: ComponentType; props?: any }
->;
+const previews = import.meta.globEager<{
+  title?: string;
+  default: ComponentType;
+  props?: any;
+}>("./Previews/*.tsx");
+
+// const previews = parcelPreviews as Record<
+//   string,
+//   { title?: string; default: ComponentType; props?: any }
+// >;
 
 function PreviewPicker() {
   const [selectedComponent, setSelectedComponent] = useState(
@@ -23,7 +29,7 @@ function PreviewPicker() {
     () =>
       [
         previews[selectedComponent].default,
-        previews[selectedComponent].props
+        previews[selectedComponent].props,
       ] as const,
     [selectedComponent]
   );
@@ -41,7 +47,7 @@ function PreviewPicker() {
           </option>
         ))}
       </select>
-      <Component {...props}/>
+      <Component {...props} />
     </>
   );
 }
