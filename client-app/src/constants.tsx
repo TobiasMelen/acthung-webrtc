@@ -1,8 +1,8 @@
 export const SIGNALING_URL =
-  process.env.SIGNAL_URL ??
+  import.meta.env.VITE_SIGNAL_URL ??
   (() => {
     throw new Error(
-      "SIGNAL_URL for signaling server must be specified in env."
+      "VITE_SIGNAL_URL for signaling server must be specified in env."
     );
   })();
 
