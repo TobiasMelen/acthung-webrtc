@@ -1,6 +1,5 @@
 import { QRCode as Qr } from "react-qr-svg";
-import React, { useEffect, useState } from "react";
-import { inlineThrow } from "../utility";
+import React, { useState } from "react";
 type Props = {
   style?: React.CSSProperties;
   colorScheme?: "onDarkBg" | "onWhiteBg";
@@ -36,8 +35,8 @@ export default function QrCode({
   return (
     <Qr
       value={children}
-      bgColor="white"
-      fgColor="black"
+      bgColor="black"
+      fgColor="white"
       style={{ display: "block", position: "relative", ...style }}
       preserveAspectRatio="xMidYMax slice"
     />

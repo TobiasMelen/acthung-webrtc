@@ -9,7 +9,6 @@ import Layout from "./Layout";
 import QrCode from "./QrCode";
 import Waiting from "./Waiting";
 import {
-  GameSettingsContext,
   GameSettingsProvider,
 } from "./GameSettingsContext";
 
@@ -245,6 +244,7 @@ const FixedStats = ({
       >
         {players.map((player) => (
           <div
+            key={player.id}
             style={{
               color: player.color,
               textAlign: "right",
