@@ -1,25 +1,31 @@
-import React, { ComponentProps, CSSProperties, useMemo } from "react";
+import React, {
+  ComponentProps,
+  CSSProperties,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useMemoMerge } from "../hooks/useMemoMerge";
 import useMediaMatch, { MediaQueryMatch } from "../hooks/useMediaMatch";
 
 const createContainerStyle = (centered: boolean): CSSProperties => ({
   width: "100vw",
+  height: "100%",
   display: "flex",
   justifyContent: centered ? "center" : "space-between",
   alignItems: "center",
-  overflow: "hidden"
+  overflow: "hidden",
 });
 
 const containerMediaStyle: MediaQueryMatch<CSSProperties> = {
   "(orientation: landscape)": {
     flexDirection: "row",
-    height: "100vh",
-    margin: "0 auto"
+    margin: "0 auto",
+    overflow: "visible",
   },
   "(orientation: portrait)": {
     flexDirection: "column",
-    height: "90vh"
-  }
+  },
 };
 
 export default function PlayerLayout({
@@ -28,7 +34,7 @@ export default function PlayerLayout({
 }: { centered?: boolean } & ComponentProps<"main">) {
   const containerMediaMatchStyle = useMediaMatch(containerMediaStyle);
   const containerStyle = useMemo(() => createContainerStyle(centered), [
-    centered
+    centered,
   ]);
   return (
     <main

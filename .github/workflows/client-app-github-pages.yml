@@ -17,7 +17,7 @@ jobs:
       run: |
         cd client-app
         yarn install
-        yarn run parcel build src/index.html --public-url /${{ github.event.repository.name }}/
+        yarn run build --base /${{ github.event.repository.name }}/
 
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@releases/v3

@@ -11,7 +11,7 @@ const verticalFlex: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
-  alignItems: "start"
+  alignItems: "start",
 };
 
 export default function Waiting({ url, players }: Props) {
@@ -21,41 +21,42 @@ export default function Waiting({ url, players }: Props) {
       <div
         style={{
           width: "50%",
-          maxHeight: "75%"
+          maxHeight: "75%",
         }}
       >
         <QrCode
           colorScheme="onWhiteBg"
           padding={2}
           style={{
-            maxWidth: 550,
-            maxHeight: 550,
-            margin: "0 auto"
+            maxWidth: 600,
+            maxHeight: 600,
+            margin: "0 auto 1em auto",
           }}
         >
           {url}
         </QrCode>
         <a
-          href={url}
-          style={{
-            textAlign: "center",
-            display: "block",
-            fontSize: "0.8em",
-            marginTop: "0.8em"
-          }}
-        >
-          {url}
-        </a>
+        href={url}
+        style={{
+          textAlign: "center",
+          display: "block",
+          fontSize: "0.8em",
+          marginTop: "0.8em",
+          alignSelf: "center",
+        }}
+      >
+        {url}
+      </a>
       </div>
       <div
         style={{
           ...verticalFlex,
           width: 0,
           flexGrow: players.length ? 0.5 : 0,
-          transition: "flex-grow 500ms ease-in"
+          transition: "flex-grow 500ms ease-in",
         }}
       >
-        {players.map(player => (
+        {players.map((player) => (
           <PlayerItem key={player.id} {...player} />
         ))}
       </div>
@@ -76,7 +77,7 @@ const PlayerItem = (player: Props["players"][0]) => {
         transition: "transform 150ms ease-in, opacity 150ms ease-in",
         transform: player.ready ? "scale(1.1) translateX(5%)" : undefined,
         animation: "fadeIn 250ms ease-in, fromRight 500ms ease-in",
-        minWidth: "7em"
+        minWidth: "7em",
       }}
       key={player.id}
     >
@@ -85,7 +86,7 @@ const PlayerItem = (player: Props["players"][0]) => {
           color: player.color,
           fontSize: "3em",
           transition: "color 150ms",
-          whiteSpace: "nowrap"
+          whiteSpace: "nowrap",
         }}
       >
         {player.name} {player.ready ? <small>👍</small> : "  "}

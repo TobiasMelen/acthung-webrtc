@@ -86,11 +86,10 @@ const TurnButton = ({
     style={{
       padding: "0.5em",
       flexBasis: "33%",
-      alignSelf: "constrain",
-      flexGrow: 0,
-      flexShrink: 10,
+      alignSelf: "stretch",
       WebkitUserSelect: "none",
-      touchAction: "none"
+      touchAction: "none",
+      display: "flex",
     }}
     onTouchStart={handler.onPress}
     onTouchEnd={handler.onRelease}
