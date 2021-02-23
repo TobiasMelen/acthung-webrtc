@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, CSSProperties } from "react";
+import React, { useRef, useEffect, CSSProperties, useState } from "react";
 import snakeGameContext, { SnakeInput } from "../canvas/snakeGameContext";
 
 type Props = {
@@ -9,55 +9,52 @@ type Props = {
   children?: React.ReactNode;
 };
 
-const canvascontainerStyle: CSSProperties = {
+const canvasStyle: CSSProperties = {
   flexGrow: 1,
   height: "100%",
   width: "100%",
 };
 export default function GameRound({ run, input, children }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvas, setCanvas] = useState<
     PromiseResult<ReturnType<typeof createSnakeCanvas>>
   >();
 
   useEffect(() => {
-    if (containerRef.current == null) {
-      return;
+    if (canvasRef.current == null || canvas) {
+      return () =>
+        setCanvas((canvas) => {
+          canvas?.destroy();
+          return undefined;
+        });
     }
-    createSnakeCanvas(containerRef.current).then((canvas) => {
-      canvasRef.current = canvas;
+    createSnakeCanvas(canvasRef.current).then((canvas) => {
+      setCanvas(canvas);
     });
-    return () => canvasRef.current?.destroy();
-  }, [containerRef.current]);
+  }, [canvasRef.current]);
 
   useEffect(() => {
-    const snakeCanvas = canvasRef.current;
-    if (snakeCanvas == null) {
+    if (canvas == null) {
       return;
     }
     for (const snakeInput of input) {
-      const turner = snakeCanvas.inputSnakeData(snakeInput);
+      const turner = canvas.inputSnakeData(snakeInput);
       snakeInput.onTurnInput(turner);
     }
-  }, [canvasRef.current, input]);
+  }, [canvas, input]);
 
   useEffect(() => {
-    const snakeCanvas = canvasRef.current;
-    if (snakeCanvas == null) {
+    if (canvas == null) {
       return;
     }
-    run ? snakeCanvas.run() : snakeCanvas.stop();
-  }, [canvasRef.current, run]);
+    run ? canvas.run() : canvas.stop();
+  }, [canvas, run]);
 
-  return (
-    <div ref={containerRef} style={canvascontainerStyle}>
-      {children}
-    </div>
-  );
+  return <canvas ref={canvasRef} style={canvasStyle} />;
 }
 
 async function createSnakeCanvas(
-  container: HTMLElement,
+  canvas: HTMLCanvasElement,
   {
     maxVerticalResolution = 1080,
     ...contextOptions
@@ -66,17 +63,15 @@ async function createSnakeCanvas(
   >[1] = {}
 ) {
   //Create scaled canvas for rendering
-  const canvas = document.createElement("canvas");
-  container.appendChild(canvas);
   canvas.style.height = "100%";
   canvas.style.width = "100%";
-  if (container.clientHeight > maxVerticalResolution) {
+  if (canvas.clientHeight > maxVerticalResolution) {
     canvas.height = maxVerticalResolution;
     canvas.width =
-      (maxVerticalResolution / container.clientHeight) * container.clientWidth;
+      (maxVerticalResolution / canvas.clientHeight) * canvas.clientWidth;
   } else {
-    canvas.height = container.clientHeight;
-    canvas.width = container.clientWidth;
+    canvas.height = canvas.clientHeight;
+    canvas.width = canvas.clientWidth;
   }
 
   //If possibly to create gamecontext offscreen, in seperate web-worker, do so. Otherwise initialize it directly.
@@ -89,7 +84,6 @@ async function createSnakeCanvas(
     ...gameContext,
     destroy() {
       gameContext.destroy();
-      container.removeChild(canvas);
     },
   };
 }

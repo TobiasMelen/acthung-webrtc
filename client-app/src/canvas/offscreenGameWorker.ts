@@ -2,7 +2,7 @@
 import { createChannelFromWorker } from "./offscreenGameMessages";
 import snakeGameContext from "./snakeGameContext";
 
-const messageHandler = (worker: DedicatedWorkerGlobalScope) => (ev: MessageEvent) => {
+const setupMessageHandler = (worker: DedicatedWorkerGlobalScope) => (ev: MessageEvent) => {
   if (ev.data instanceof OffscreenCanvas) {
     const channel = createChannelFromWorker(
       worker
@@ -23,10 +23,10 @@ const messageHandler = (worker: DedicatedWorkerGlobalScope) => (ev: MessageEvent
     channel.on("stop", game.stop);
     channel.on("destroy", () => {
       game.destroy();
-      onmessage = messageHandler(worker);
+      onmessage = setupMessageHandler(worker);
     });
     channel.send("canvasCreated", undefined);
   }
 };
 
-onmessage = messageHandler(self as DedicatedWorkerGlobalScope);
+onmessage = setupMessageHandler(self as DedicatedWorkerGlobalScope);

@@ -2,8 +2,6 @@ import { createChannelToWorker } from "./offscreenGameMessages";
 import snakeGameContext from "./snakeGameContext";
 import OffscreenGameWorker from "./offscreenGameWorker?worker";
 
-const worker = new OffscreenGameWorker();
-
 const createOffScreenGame: Async<typeof snakeGameContext> = async (
   canvas,
   opts
@@ -13,6 +11,7 @@ const createOffScreenGame: Async<typeof snakeGameContext> = async (
       `Supplied canvas is of type ${canvas}, HTMLCanvasElement was expected. Only HTMLCanvasElement can be transferred offscreen`
     );
   }
+  const worker = new OffscreenGameWorker();
   const offscreenCanvas = canvas.transferControlToOffscreen();
   worker.postMessage(offscreenCanvas, [offscreenCanvas]);
   const channel = createChannelToWorker(worker);
@@ -32,6 +31,7 @@ const createOffScreenGame: Async<typeof snakeGameContext> = async (
     },
     destroy() {
       channel.send("destroy", undefined);
+      channel.destroy();
     },
     addTrackingChannel(trackingChannel){
 

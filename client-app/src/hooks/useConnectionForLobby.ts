@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import useSignalClient from "./useSignalClient";
 import {
   createMessageChannelToPlayer,
-  MessageChannelToPlayer
+  MessageChannelToPlayer,
 } from "../messaging/dataChannelMessaging";
 import { DEFAULT_RTC_PEER_CONFIG } from "../constants";
 
@@ -23,8 +23,8 @@ export default function useLobbyConnection(lobbyName: string) {
     useMemo(
       () => ({
         query: {
-          hostLobby: lobbyName
-        }
+          hostLobby: lobbyName,
+        },
       }),
       [lobbyName]
     )
@@ -32,16 +32,11 @@ export default function useLobbyConnection(lobbyName: string) {
 
   const removeStaleConnection = useCallback(
     (staleConnection: RTCPeerConnection) => {
-      setClientConnections(connections =>
+      setClientConnections((connections) =>
         Object.keys(connections).reduce((acc, key) => {
           if (connections[key]?.[0] !== staleConnection) {
             acc[key] = connections[key];
           } else {
-            //stale connection, try closing everything if it still is around.
-            console.log(
-              "discarding connection in state",
-              staleConnection.iceConnectionState
-            );
             try {
               connections[key][1].destroy();
             } catch (err) {
@@ -57,13 +52,13 @@ export default function useLobbyConnection(lobbyName: string) {
 
   const onClientDataChannel = useCallback(
     (connection: RTCPeerConnection, id: string) => ({
-      channel
+      channel,
     }: RTCDataChannelEvent) => {
       channel.onclose = () => removeStaleConnection(connection);
-      setClientConnections(connections => {
+      setClientConnections((connections) => {
         return {
           ...connections,
-          [id]: [connection, createMessageChannelToPlayer(connection, channel)]
+          [id]: [connection, createMessageChannelToPlayer(connection, channel)],
         };
       });
     },
@@ -82,11 +77,11 @@ export default function useLobbyConnection(lobbyName: string) {
           clientConnection,
           offerFrom
         );
-        clientConnection.onicecandidate = event =>
+        clientConnection.onicecandidate = (event) =>
           event.candidate != null &&
           signalClient.send({
             to: offerFrom,
-            data: event.candidate.toJSON()
+            data: event.candidate.toJSON(),
           });
         clientConnection.oniceconnectionstatechange = () => {
           clientConnection.iceConnectionState === "failed" ||

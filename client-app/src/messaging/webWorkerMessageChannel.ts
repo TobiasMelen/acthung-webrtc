@@ -2,14 +2,9 @@ import setupMessageChannel, {
   ConverterCollection,
 } from "./setupMessageChannel";
 
-export const getWorkerChannelHooks = (worker: Worker | DedicatedWorkerGlobalScope) => {
-  const eventHandler = (ev: MessageEvent) => 
-} 
-
 export function createWebWorkerMessageChannel(
   worker: Worker | DedicatedWorkerGlobalScope
 ) {
-  const workerOriginalHandler = worker.onmessage;
   return <
     SendMessages extends ConverterCollection,
     ReceiveMessages extends ConverterCollection

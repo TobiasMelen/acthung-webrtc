@@ -59,7 +59,7 @@ export default function Banger({
     let timeout: number;
     window.addEventListener("resize", () => {
       window.clearTimeout(timeout);
-      timeout = window.setTimeout(shrinkToFit, 1000);
+      timeout = window.setTimeout(shrinkToFit, 500);
     });
     return () => window.clearTimeout(timeout);
   }, [shrinkToFit]);
