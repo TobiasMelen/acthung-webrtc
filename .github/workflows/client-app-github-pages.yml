@@ -16,8 +16,8 @@ jobs:
     - name: Install and build
       run: |
         cd client-app
-        yarn install --frozen-lockfile
-        yarn run build --base /${{ github.event.repository.name }}/
+        npm ci --prod
+        npm run build -- --base /${{ github.event.repository.name }}/
 
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@releases/v3

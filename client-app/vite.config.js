@@ -1,6 +1,5 @@
-// vite.config.js
-import refresh from "@vitejs/plugin-react-refresh";
-
-export default {
-  plugins: [refresh()],
-};
+export default ({ command }) => ({
+  plugins: [
+    command === "serve" ? [require("@vitejs/plugin-react-refresh")()] : [],
+  ],
+});
