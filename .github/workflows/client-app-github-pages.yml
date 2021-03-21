@@ -16,7 +16,7 @@ jobs:
     - name: Install and build
       run: |
         cd client-app
-        yarn install
+        yarn install --frozen-lockfile
         yarn run build --base /${{ github.event.repository.name }}/
 
     - name: Deploy
