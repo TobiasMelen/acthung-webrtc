@@ -5,8 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "vite",
-    "build": "vite build",
-    "test": "jest"
+    "build": "vite build"
   },
   "dependencies": {
     "react": "17.0.1",
