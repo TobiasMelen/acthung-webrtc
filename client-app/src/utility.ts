@@ -10,7 +10,7 @@ export function extractObjectDiff<T>(
   ...omitTypes: string[]
 ): Partial<T> {
   return typedEntries(update ?? {})
-    .filter(entry => !omitTypes.includes(typeof entry[1]))
+    .filter((entry) => !omitTypes.includes(typeof entry[1]))
     .reduce((acc, [key, value]) => {
       if (source?.[key] !== value) {
         acc[key] = value;
