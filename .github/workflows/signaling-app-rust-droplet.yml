@@ -1,0 +1,26 @@
+name: Compile rust, deploy to DO droplet
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - signaling-app-rust/**
+jobs:
+  deploy:
+    name: Compile rust, deploy to DO droplet
+    runs-on: ubuntu-latest
+    steps:
+      # This step checks out a copy of your repository.
+      - uses: actions/checkout@v2
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            profile: minimal
+      - uses: Swatinem/rust-cache@v1
+        with: 
+          working-directory: signaling-app-rust
+      - name: Compile Rust
+        run: |
+          cd signaling-app-rust
+          cargo build --release
