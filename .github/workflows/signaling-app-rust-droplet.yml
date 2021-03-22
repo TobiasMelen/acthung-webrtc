@@ -6,7 +6,7 @@ on:
     paths:
       - signaling-app-rust/**
 jobs:
-  deploy:
+  build-and-deploy:
     name: Compile rust, deploy to DO droplet
     runs-on: ubuntu-latest
     steps:
@@ -24,3 +24,13 @@ jobs:
         run: |
           cd signaling-app-rust
           cargo build --release
+      - name: Deploy and start binary
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_ADDRESS }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: signaling-app/rust/target/release/signaling-app-rust
+          target: signaling-app/rust
+          strip-components: 4
+          overwrite: true

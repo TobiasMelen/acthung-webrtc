@@ -5,7 +5,7 @@ use warp::Filter;
 #[tokio::main]
 async fn main() {
     // GET /hello/warp => 200 OK with body "Hello, warp!"
-    let hello = warp::path!("hello" / String).map(|name| format!("Hello, {}!", name));
+    let hello = warp::path!("hello" / String).map(|name| format!("Hello, {}!!", name));
 
     let port = env::args()
         .skip_while(|s| s != "-p" && s != "--port")
