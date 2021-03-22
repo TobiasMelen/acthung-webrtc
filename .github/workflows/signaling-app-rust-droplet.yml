@@ -5,7 +5,7 @@ on:
       - master
     paths:
       - signaling-app-rust/**
-      - ./github/workflows/signaling-app-rust-droplet.yml
+      - .github/workflows/signaling-app-rust-droplet.yml
 jobs:
   build-and-deploy:
     name: Compile rust, deploy to DO droplet
