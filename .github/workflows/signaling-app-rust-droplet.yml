@@ -31,7 +31,7 @@ jobs:
           host: ${{ secrets.SSH_ADDRESS }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: signaling-app/rust/target/release/signaling-app-rust
-          target: signaling-app/rust
+          source: signaling-app-rust/target/release/signaling-app-rust
+          target: signaling-app-rust
           strip_components: 4
           overwrite: true
