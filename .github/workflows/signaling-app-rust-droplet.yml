@@ -44,4 +44,4 @@ jobs:
           script: |
             cd signaling-app-rust
             ls
-            nohup ./signaling-app-rust --port 8000 &
+            nohup ./signaling-app-rust --port 8000 & disown
