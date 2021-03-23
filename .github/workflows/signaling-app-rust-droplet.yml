@@ -33,7 +33,7 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           source: signaling-app-rust/target/release/signaling-app-rust
           target: signaling-app-rust
-          strip_components: 4
+          strip_components: 3
           overwrite: true
       - name: Start Binary on port 8000
         uses: appleboy/ssh-action@master
