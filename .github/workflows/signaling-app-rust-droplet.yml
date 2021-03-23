@@ -35,10 +35,9 @@ jobs:
           target: signaling-app-rust
           strip_components: 4
           overwrite: true
-      -name: Start Binary on port 8000
+      - name: Start Binary on port 8000
           host: ${{ secrets.SSH_ADDRESS }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            cd signaling-app-rust
-            signaling-app-rust -p 8000
+            systemctl --now enable signaling-app-rust/signaling-app-rust
