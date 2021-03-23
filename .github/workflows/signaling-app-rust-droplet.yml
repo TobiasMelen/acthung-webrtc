@@ -36,8 +36,9 @@ jobs:
           strip_components: 4
           overwrite: true
       - name: Start Binary on port 8000
+        uses: appleboy/ssh-action@master
+        with:
           host: ${{ secrets.SSH_ADDRESS }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            systemctl --now enable signaling-app-rust/signaling-app-rust
+          script: signaling-app-rust/signaling-app-rust --port 8000 &
