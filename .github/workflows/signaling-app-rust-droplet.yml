@@ -43,4 +43,5 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
             cd signaling-app-rust
+            ls
             nohup signaling-app-rust --port 8000 &
