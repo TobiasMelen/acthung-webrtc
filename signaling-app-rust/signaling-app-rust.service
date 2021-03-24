@@ -3,7 +3,7 @@ Description="Rust signaling server"
 
 [Service]
 Type=simple
-ExecStart=/rust-signaling-server
+ExecStart=usr/local/bin/rust-signaling-server
 
 [Install]
 WantedBy=multi-user.target
