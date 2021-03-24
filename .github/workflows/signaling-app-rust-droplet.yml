@@ -31,8 +31,10 @@ jobs:
           host: ${{ secrets.SSH_ADDRESS }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          source: signaling-app-rust/target/release/signaling-app-rust
-          target: signaling-app-rust
+          source: 
+            - signaling-app-rust/target/release/signaling-app-rust
+            - signaling-app-rust/../signaling-app-rust/signaling-app-rust.service
+          target: signaling-app-rust-deployment
           strip_components: 3
           overwrite: true
       - name: Start Binary on port 8000
@@ -42,6 +44,11 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            cd signaling-app-rust
-            ls
-            nohup ./signaling-app-rust --port 8000 & disown
+            cd signaling-app-rust-deployment
+            sudo systemctl stop signaling-app-rust.service
+            mv signaling-app-rust.service /etc/systemd/system/
+            mv signaling-app-rust /usr/local/bin
+            sudo systemctl enable --now signaling-app-rust.service
+            systemctl status signaling-app-rust.service
+            cd ..
+            rm -r signaling-app-rust-deployment
