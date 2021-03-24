@@ -12,5 +12,6 @@ async fn main() {
         .nth(1)
         .and_then(|s| s.parse().ok())
         .unwrap_or(3030);
-    warp::serve(hello).run(([127, 0, 0, 1], port)).await;
+    println!("Starting server on port {0}", port);
+    warp::serve(hello).run(([207, 154, 241, 68], port)).await;
 }
