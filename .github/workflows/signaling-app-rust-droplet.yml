@@ -44,10 +44,10 @@ jobs:
           script: |
             cd signaling-app-rust-deployment
             ls
-            sudo -S systemctl stop signaling-app-rust.service
-            mv signaling-app-rust.service /etc/systemd/system/
-            sudo -S mv signaling-app-rust /usr/local/bin
-            sudo -S systemctl enable --now signaling-app-rust.service
+            sudo systemctl stop signaling-app-rust.service
+            sudo mv signaling-app-rust.service /etc/systemd/system/
+            sudo mv signaling-app-rust /usr/local/bin
+            sudo systemctl enable --now signaling-app-rust.service
             systemctl status signaling-app-rust.service
             cd ..
             rm -r signaling-app-rust-deployment
