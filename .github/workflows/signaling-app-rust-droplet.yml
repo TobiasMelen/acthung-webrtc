@@ -1,0 +1,52 @@
+name: Compile rust, deploy to DO droplet
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - signaling-app-rust/**
+      - .github/workflows/signaling-app-rust-droplet.yml
+jobs:
+  build-and-deploy:
+    name: Compile rust, deploy to DO droplet
+    runs-on: ubuntu-latest
+    steps:
+      # This step checks out a copy of your repository.
+      - uses: actions/checkout@v2
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            profile: minimal
+      - uses: Swatinem/rust-cache@v1
+        with: 
+          working-directory: signaling-app-rust
+      - name: Compile Rust
+        run: |
+          cd signaling-app-rust
+          cargo build --release
+      - name: Deploy binary
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_ADDRESS }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: ././signaling-app-rust/signaling-app-rust.service, signaling-app-rust/target/release/signaling-app-rust
+          target: signaling-app-rust-deployment
+          strip_components: 3
+          overwrite: true
+      - name: Start Binary on port 8000
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_ADDRESS }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd signaling-app-rust-deployment
+            sudo systemctl stop signaling-app-rust.service
+            sudo mv signaling-app-rust.service /etc/systemd/system/
+            sudo mv signaling-app-rust /usr/local/bin/
+            sudo systemctl enable --now signaling-app-rust.service
+            systemctl status signaling-app-rust.service
+            cd ..
+            rm -r signaling-app-rust-deployment
