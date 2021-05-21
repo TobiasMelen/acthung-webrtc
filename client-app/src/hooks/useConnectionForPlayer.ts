@@ -74,17 +74,7 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
             return undefined;
           });
         switch (peerConnection.iceConnectionState) {
-          case "completed": {
-            //Connection has been made. No need to keep the connection the signal server open.
-            //(Hopefully webrtc won't try to send more candidates)
-            //signalClient.disconnect();
-            break;
-          }
-          case "disconnected": {
-            //Give this weirdly documented state one second to recover before trying a reconnect from scratch;
-            peerDisconnectTimeout = window.setTimeout(disconnect, 1000);
-            break;
-          }
+          case "disconnected":
           case "failed": {
             disconnect();
             break;
