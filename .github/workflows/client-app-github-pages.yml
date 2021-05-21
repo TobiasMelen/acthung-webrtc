@@ -5,6 +5,7 @@ on:
     branches:
       - master
     paths:
+      - ./github/**
       - client-app/**
 jobs:
   build-and-deploy:
@@ -16,8 +17,8 @@ jobs:
     - name: Install and build
       run: |
         cd client-app
-        npm ci --prod
-        npm run build -- --base /${{ github.event.repository.name }}/
+        yarn
+        yarn build --base /${{ github.event.repository.name }}/
 
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@releases/v3
