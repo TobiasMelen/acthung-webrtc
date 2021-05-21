@@ -1,6 +1,5 @@
 //@ts-ignore Parcel shenaningans
-import parcelPreviews from "./Previews/*.tsx";
-import { render } from "react-dom";
+import { render } from "preact/compat";
 import React, { useState, useCallback, useMemo, ComponentType } from "react";
 
 const previews = import.meta.globEager<{
@@ -52,4 +51,4 @@ function PreviewPicker() {
   );
 }
 
-render(<PreviewPicker />, document.getElementById("app-root"));
+render(<PreviewPicker />, document.getElementById("app-root")!);

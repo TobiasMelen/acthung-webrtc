@@ -1,5 +1,5 @@
 import { LobbyPlayer } from "../src/hooks/useStateForLobby";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ALL_COLORS } from "../src/constants";
 import useEffectWithDeps from "../src/hooks/useEffectWithDeps";
 
@@ -13,7 +13,7 @@ type MockPlayer = LobbyPlayer & { hidden: boolean };
 
 export default function useMockPlayers({
   numberOfPlayers = ALL_COLORS.length,
-  playersReady = true,
+  playersReady = false,
   autoPlay = true,
 }: Options) {
   const modifyPlayer = (id: string) => (

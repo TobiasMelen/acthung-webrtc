@@ -3,8 +3,8 @@ import useMockPlayers from "../useMockPlayers";
 import { Game } from "../../src/components/Lobby";
 
 export const props = {
-  numberOfPlayers: 4,
-  playersReady: false
+  numberOfPlayers: 7,
+  playersReady: true
 };
 
 export default function GamePreview(properties: typeof props) {

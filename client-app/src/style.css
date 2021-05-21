@@ -25,7 +25,8 @@
 
 @font-face {
   font-family: "Zona Pro";
-  src: url("../assets/ZonaPro-ExtraBoldDemo.otf") format("opentype");
+  src: url("../assets/ZonaPro-ExtraBoldDemo.woff2") format("woff2"),
+    url("../assets/ZonaPro-ExtraBoldDemo.otf") format("opentype");
 }
 
 body {

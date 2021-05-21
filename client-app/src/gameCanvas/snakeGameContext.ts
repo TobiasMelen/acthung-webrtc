@@ -3,9 +3,8 @@ import {
   messagesFromTracker,
   messagesToTracker,
   TrackerMessageChannel,
-} from "../trackerCanvas/trackerCanvasMessaging";
-import CollisionTrackerWorker from "../trackerCanvas/trackerCanvas?worker";
-import setupMessageChannel from "../messaging/setupMessageChannel";
+} from "../collisionCanvas/collisionCanvasMessaging";
+import CollisionTrackerWorker from "../collisionCanvas/collisionCanvas?worker";
 import { createWebWorkerMessageChannel } from "../messaging/webWorkerMessageChannel";
 
 export type SnakeInput = {
@@ -28,7 +27,8 @@ export default function snakeGameContext(
     startingHoleChancePercantage = -5,
     holeDuration = 10,
     maxVerticalResolution = 1080,
-    checkCollisions = false,
+    checkCollisions = true,
+    useTrackingCollisionCanvas = false,
   } = {}
 ) {
   const context =
@@ -80,7 +80,7 @@ export default function snakeGameContext(
     snake: typeof snakes[0],
     snakeSpeed: number,
     turnAngle: number,
-    checkCollision = true
+    checkCollision = false
   ) {
     if (snake.hasCollided) {
       return;
@@ -94,24 +94,25 @@ export default function snakeGameContext(
       }
     }
 
-    // const willCollide =
-    //   (checkCollision &&
-    //     (snake.position.x < 0 ||
-    //       snake.position.x > canvas.width ||
-    //       snake.position.y < 0 ||
-    //       snake.position.y > canvas.height)) ||
-    //   context.getImageData(
-    //     snake.position.x +
-    //       (snakeSpeed + lineWidth / 2) * Math.cos(snake.direction),
-    //     snake.position.y +
-    //       (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
-    //     1,
-    //     1
-    //   ).data[3] !== 0;
-    // if (willCollide) {
-    //   snake.hasCollided = true;
-    //   snake.onCollision();
-    // }
+    const willCollide =
+      checkCollision &&
+      (snake.position.x < 0 ||
+        snake.position.x > canvas.width ||
+        snake.position.y < 0 ||
+        snake.position.y > canvas.height ||
+        context.getImageData(
+          snake.position.x +
+            (snakeSpeed + lineWidth / 2) * Math.cos(snake.direction),
+          snake.position.y +
+            (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
+          1,
+          1
+        ).data[3] !== 0);
+
+    if (willCollide) {
+      snake.hasCollided = true;
+      snake.onCollision();
+    }
 
     if (snake.erasePos != null) {
       context.beginPath();
@@ -175,18 +176,22 @@ export default function snakeGameContext(
   }
 
   //Create collision canvas
-  const collisionCanvasWorker = new CollisionTrackerWorker();
-  collisionCanvasWorker.postMessage("SELF_HOST_CANVAS");
-  const collisionTracker = createWebWorkerMessageChannel(collisionCanvasWorker)(
-    messagesToTracker,
-    messagesFromTracker
-  );
-  addTrackingChannel(collisionTracker, 50, true);
+  const collisionCanvasWorker =
+    useTrackingCollisionCanvas &&
+    (() => {
+      const collisionCanvasWorker = new CollisionTrackerWorker();
+      collisionCanvasWorker.postMessage("SELF_HOST_CANVAS");
+      const collisionTracker = createWebWorkerMessageChannel(
+        collisionCanvasWorker
+      )(messagesToTracker, messagesFromTracker);
+      addTrackingChannel(collisionTracker, 50, true);
+      return collisionCanvasWorker;
+    })();
 
   let stopped = true;
   function run() {
-    let collisionCheck = checkCollisions;
     let timeStamp = performance.now();
+    let collisionCheckOdd = false;
     function drawFrame(now: number) {
       const frameTimeActual = now - timeStamp;
       let frameTimeOffset = frameTimeActual / frameTimeSixtyFps;
@@ -195,25 +200,28 @@ export default function snakeGameContext(
       const frameTimeSnakeSpeed = snakeSpeed * frameTimeOffset;
       const frameTimeTurnRadius = turnRadius * frameTimeOffset;
       timeStamp = now;
-      for (const snake of snakes) {
+      for (let index = 0; index < snakes.length; index++) {
         moveSnake(
-          snake,
+          snakes[index],
           frameTimeSnakeSpeed,
           frameTimeTurnRadius,
-          collisionCheck
+          checkCollisions && !!(index % 2) === collisionCheckOdd
         );
       }
-      collisionCheck = checkCollisions && !collisionCheck;
+      collisionCheckOdd = !collisionCheckOdd;
+      
       for (const tracker of trackers) {
         //do not create redundant position data objects
         let positionData = null;
         if (now - tracker.latestReport >= tracker.interval) {
-          positionData ??= snakes.filter(snake => !snake.hasCollided).map((snake) => ({
-            id: snake.id,
-            fill: snake.currentHoleSection ? undefined : snake.color,
-            x: snake.position.x,
-            y: snake.position.y,
-          }));
+          positionData ??= snakes
+            .filter((snake) => !snake.hasCollided)
+            .map((snake) => ({
+              id: snake.id,
+              fill: snake.currentHoleSection ? undefined : snake.color,
+              x: snake.position.x,
+              y: snake.position.y,
+            }));
           tracker.channel.send("positionData", positionData);
         }
       }
@@ -234,7 +242,7 @@ export default function snakeGameContext(
     inputSnakeData,
     addTrackingChannel,
     destroy() {
-      collisionCanvasWorker.terminate();
+      collisionCanvasWorker && collisionCanvasWorker.terminate();
       stop();
     },
   };

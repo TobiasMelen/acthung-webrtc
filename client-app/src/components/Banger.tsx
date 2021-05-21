@@ -4,73 +4,66 @@ import {
   useRef,
   useState,
   useEffect,
-  useCallback
+  useCallback,
 } from "react";
 import PlayerLayout from "./Layout";
 import React from "react";
-import useEffectWithDeps from "../hooks/useEffectWithDeps";
 
+const waitForRender = () =>
+  new Promise((resolve) =>
+    window.requestAnimationFrame(() => window.requestAnimationFrame(resolve))
+  );
 const style: CSSProperties = {
   textAlign: "center",
-  margin: "0 auto"
+  margin: "0 auto",
 };
 
-const wrapperStyle = {
-  display: "flex",
-  justifyContent: "center"
-};
+type Props = PropsWithChildren<{
+  fixed?: boolean;
+  style?: CSSProperties;
+  startingEm?: number;
+}>;
 
 export default function Banger({
   children,
   style: styleProp,
-  adjustWithChildren = true,
-  startingEm = 20
-}: PropsWithChildren<{
-  adjustWithChildren?: boolean;
-  style?: CSSProperties;
-  startingEm?: number;
-}>) {
+  startingEm = 20,
+}: Props) {
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const [headingSize, setHeadingSize] = useState({
-    em: startingEm,
-    validated: false
-  });
+  const [headingSize, setHeadingSize] = useState<number>();
+
   const shrinkToFit = useCallback(() => {
-    if (headingSize.validated || headingRef.current == null) {
-      return;
+    async function shrink(em: number) {
+      if (headingRef.current == null) {
+        return;
+      }
+      headingRef.current.style.fontSize = `${em}em`;
+      const fits =
+        headingRef.current.clientHeight <= document.body.scrollHeight &&
+        headingRef.current.clientWidth <= document.body.clientWidth;
+      console.log(fits);
+      fits ? setHeadingSize(em) : shrink(em - 1);
     }
-    const fits =
-      headingRef.current.clientHeight <= document.body.scrollHeight &&
-      headingRef.current.clientWidth <= document.body.clientWidth;
-    setHeadingSize(size =>
-      fits ? { ...size, validated: true } : { ...size, em: size.em - 1 }
-    );
-  }, [headingSize, headingRef.current]);
-  useEffectWithDeps(
-    prev => {
-      adjustWithChildren &&
-        prev != null &&
-        setHeadingSize({ validated: false, em: startingEm });
-    },
-    [children]
-  );
+    shrink(startingEm);
+  }, [headingRef.current]);
+
   useEffect(() => {
-    shrinkToFit();
     let timeout: number;
     window.addEventListener("resize", () => {
       window.clearTimeout(timeout);
       timeout = window.setTimeout(shrinkToFit, 500);
     });
+    shrinkToFit();
     return () => window.clearTimeout(timeout);
-  }, [shrinkToFit]);
+  }, [shrinkToFit, startingEm]);
+
   return (
     <PlayerLayout>
       <h1
         style={{
           ...styleProp,
           ...style,
-          fontSize: `${headingSize.em}em`,
-          visibility: headingSize.validated ? "visible" : "hidden"
+          visibility: headingSize != null ? "visible" : "hidden",
         }}
         ref={headingRef}
       >

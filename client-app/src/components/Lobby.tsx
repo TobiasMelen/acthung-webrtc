@@ -1,31 +1,31 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { ALL_COLORS } from "../constants";
 import useLobbyConnection from "../hooks/useConnectionForLobby";
 import useStateForLobby, { LobbyPlayer } from "../hooks/useStateForLobby";
 import Banger from "./Banger";
 import GameRound from "./GameRound";
 import Layout from "./Layout";
-import QrCode from "./QrCode";
 import Waiting from "./Waiting";
 import { GameSettingsProvider } from "./GameSettingsContext";
 import Scoreboard from "./Scoreboard";
+
+type PlayerInfo = Pick<LobbyPlayer, "color" | "name">;
 
 type GameState =
   | { type: "lobby" }
   | {
       type: "intermission";
-      roundWinner?: LobbyPlayer;
-      gameWinner?: LobbyPlayer;
+      roundWinner?: PlayerInfo;
+      gameWinner?: PlayerInfo;
       remainingTime: number;
     }
   | { type: "playing"; running: boolean; joinedPlayerIds: string[] };
 
 const createIntermission = (
-  roundWinner?: LobbyPlayer,
-  gameWinner?: LobbyPlayer
+  roundWinner?: PlayerInfo,
+  gameWinner?: PlayerInfo
 ): GameState => ({
   type: "intermission",
-  remainingTime: 3,
+  remainingTime: 5,
   roundWinner,
   gameWinner,
 });
@@ -49,7 +49,10 @@ export function Game({
 }) {
   const [gameState, setGameState] = useState<GameState>({ type: "lobby" });
 
-  const winningScore = useMemo(() => (players.length || 1) * 5, [players]);
+  const winningScore = useMemo(
+    () => (players.length || 1) * 5,
+    [players.length]
+  );
 
   //Tick down intermissions to next round
   useEffect(() => {
@@ -79,8 +82,9 @@ export function Game({
     }
   }, [gameState]);
 
-  //if all players ready when in lobby, start game
+  //Player join effect
   useEffect(() => {
+    //if all players ready when in lobby, start game
     if (
       gameState.type === "lobby" &&
       players.length &&
@@ -88,43 +92,70 @@ export function Game({
     ) {
       setGameState(createIntermission());
     }
+    //Go back to lobby, if no ready players are joined.
+    if (gameState.type !== "lobby" && !players.some((player) => player.ready)) {
+      setGameState({ type: "lobby" });
+    }
   }, [players, gameState.type]);
 
-  const onSnakeDeath = (player: LobbyPlayer) => {
+  //Group all joined and alive players
+  const playersInGame = useMemo(() => {
     if (gameState.type !== "playing") {
-      return;
+      return null;
     }
-    player.setState("dead");
-    const playersInGame = players.filter((player) =>
+    const joined = players.filter((player) =>
       gameState.joinedPlayerIds.includes(player.id)
     );
-    const alivePlayers = playersInGame.filter(
-      (otherPlayer) => otherPlayer !== player && otherPlayer.state === "playing"
-    );
-    alivePlayers.forEach((otherPlayer) =>
-      otherPlayer.setScore(otherPlayer.score + 1)
-    );
-    if (alivePlayers.length <= 1) {
+    return {
+      joined,
+      alive: joined.filter((otherPlayer) => otherPlayer.state === "playing"),
+    };
+  }, [gameState.type, players]);
+
+  //Finish ongoing round if someone won or no ones alive or playing
+  useEffect(() => {
+    if (!playersInGame) {
+      return;
+    }
+    const aliveCount = playersInGame.alive.length;
+    //Allow one player to skrrrt around without declaring them victor.
+    const isOneAliveButSinglePlayer =
+      aliveCount === 1 && playersInGame.joined.length === 1;
+    if (aliveCount <= 1 && !isOneAliveButSinglePlayer) {
       //We have a winner!
       setGameState((state) => ({ ...state, running: false }));
-      const playerWithMaxScore = playersInGame.reduce((maxPlayer, player) =>
-        player.score > maxPlayer.score ? player : maxPlayer
+      const playerWithMaxScore = playersInGame.joined.reduce(
+        (maxPlayer, player) =>
+          player.score > (maxPlayer?.score ?? 0) ? player : maxPlayer,
+        null as LobbyPlayer | null
       );
       window.setTimeout(() => {
         setGameState((state) =>
           state.type === "playing"
             ? createIntermission(
-                alivePlayers[0],
-                playerWithMaxScore.score > winningScore
-                  ? playerWithMaxScore
+                playersInGame.alive[0] ?? { color: "inherit", name: "Nobody" },
+                (playerWithMaxScore?.score ?? 0) > winningScore
+                  ? (playerWithMaxScore as LobbyPlayer)
                   : undefined
               )
             : state
         );
       }, 1000);
     }
+  }, [playersInGame]);
+
+  //When someone crashes, set state to that player as crashed and give everyone else a score.
+  const onSnakeDeath = (player: LobbyPlayer) => {
+    if (playersInGame == null) {
+      return;
+    }
+    player.setState("dead");
+    playersInGame.alive
+      .filter((p) => p.id !== player.id)
+      .forEach((otherPlayer) => otherPlayer.setScore(otherPlayer.score + 1));
   };
 
+  //Create new input for game when players changes.
   const gameInput = useMemo(
     () =>
       gameState.type === "playing"
@@ -154,31 +185,38 @@ export function Game({
       );
     }
     case "intermission": {
-      const message =
+      const intermissionMessage =
         gameState.gameWinner != null ? (
-          <>
+          <Banger>
             <span style={{ color: gameState.gameWinner.color }}>
               {gameState.gameWinner.name}
             </span>{" "}
             wins the game!
-          </>
-        ) : gameState.remainingTime <= 5 ? (
-          `${gameState.roundWinner ? "Next round" : "Game starts"} in ${
-            gameState.remainingTime
-          }`
+          </Banger>
+        ) : gameState.remainingTime <= 3 ? (
+          <Banger key="countdown">
+            {gameState.roundWinner ? "Next round" : "Game starts"} in{" "}
+            <span style={{ width: "1em", display: "inline-block" }}>
+              {gameState.remainingTime}
+            </span>
+          </Banger>
         ) : gameState.roundWinner ? (
-          <>
-            <span style={{ color: gameState.roundWinner.color }}>
+          <Banger>
+            <span
+              style={{
+                color: gameState.roundWinner.color,
+              }}
+            >
               {gameState.roundWinner.name}
             </span>{" "}
             survives
-          </>
+          </Banger>
         ) : (
-          "Get ready"
+          <Banger>Get ready</Banger>
         );
       return (
-        <Layout>
-          <Banger startingEm={30}>{message}</Banger>
+        <Layout key={gameState.remainingTime > 3 ? "message" : "countdown"}>
+          {intermissionMessage}
         </Layout>
       );
     }

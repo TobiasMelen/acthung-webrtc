@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, CSSProperties, useState } from "react";
-import snakeGameContext, { SnakeInput } from "../canvas/snakeGameContext";
+import snakeGameContext, { SnakeInput } from "../gameCanvas/snakeGameContext";
 
 type Props = {
   run: boolean;
@@ -75,9 +75,9 @@ async function createSnakeCanvas(
   }
 
   //If possibly to create gamecontext offscreen, in seperate web-worker, do so. Otherwise initialize it directly.
-  const gameContext = await ("OffscreenCanvas" in window
+  const gameContext = await ("OffscreenCanvas" in window && false
     ? //Load offscreen script lazily to delay worker instantion until necessary
-      (await import("../canvas/offscreenGame")).default
+      (await import("../gameCanvas/offscreenGame")).default
     : snakeGameContext)(canvas, contextOptions);
 
   return {

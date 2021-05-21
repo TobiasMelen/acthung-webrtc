@@ -5,7 +5,7 @@ import { inlineThrow } from "../utility";
 import {
   messagesFromTracker,
   messagesToTracker,
-} from "./trackerCanvasMessaging";
+} from "./collisionCanvasMessaging";
 
 type Point = { x: number; y: number };
 

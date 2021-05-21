@@ -16,7 +16,6 @@ const createPlayerFunctions = (
     stateKey &&
       setPlayerState(state => state && { ...state, [stateKey]: data });
     connection?.send(
-      //@ts-ignore Come-on typescript, be the haskell of my dreams
       type,
       data
     );

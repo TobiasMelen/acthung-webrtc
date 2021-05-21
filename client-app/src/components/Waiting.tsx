@@ -30,7 +30,7 @@ export default function Waiting({ url, players }: Props) {
           style={{
             maxWidth: 600,
             maxHeight: 600,
-            margin: "0 auto 1em auto",
+            margin: "0 auto 2em auto",
           }}
         >
           {url}
