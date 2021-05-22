@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ESNext",
+    "module": "CommonJS",
+    "lib": ["ES2020", "WebWorker"],
+    "types": ["@cloudflare/workers-types"]
+  }
+}
