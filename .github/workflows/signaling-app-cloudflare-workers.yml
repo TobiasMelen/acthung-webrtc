@@ -14,14 +14,14 @@ jobs:
     
     - name: Install, build and deploy
       env: 
-        $CF_ACCOUNT_ID: ${{ secrets.CLOUDLARE_WORKERS_ACCOUNT_ID }}
-        $CF_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_TOKEN }}
+        CF_ACCOUNT_ID: ${{ secrets.CLOUDLARE_WORKERS_ACCOUNT_ID }}
+        CF_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_TOKEN }}
       run: |
         cd signaling-app-cloudflare-worker
         curl -O https://registry.npmjs.org/esbuild-linux-64/-/esbuild-linux-64-0.12.1.tgz
         tar xf ./esbuild-linux-64-0.12.1.tgz
         compilationOutput=$(./package/bin/esbuild --platform=node ./index.js)
         curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts/achtung-signaling" \
-          -H  "Authorization: Bearer $CF_API_TOKEN" \
+          -H "Authorization: Bearer $CF_API_TOKEN" \
           -H "Content-Type: application/javascript" \
           --data $compilationOutput
