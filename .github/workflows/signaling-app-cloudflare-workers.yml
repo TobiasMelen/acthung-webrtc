@@ -25,3 +25,5 @@ jobs:
           -H "Authorization: Bearer $CF_API_TOKEN" \
           -H "Content-Type: application/javascript" \
           --data "$compilationOutput"
+          -s
+          -f
