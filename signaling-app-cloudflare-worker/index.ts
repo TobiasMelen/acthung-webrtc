@@ -22,5 +22,5 @@ async function handleRequest(request: Request) {
 }
 
 function handleSession(server: WebSocket) {
-  throw new Error("Function not implemented.");
+  throw new Error("Function not implemented!");
 }
