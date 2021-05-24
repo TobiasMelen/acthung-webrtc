@@ -5,19 +5,17 @@ import {
   createMessageChannelToLobby,
 } from "../messaging/dataChannelMessaging";
 import {
-  SIGNAL_CLIENT_DEFAULT_PARAMS,
   DEFAULT_RTC_PEER_CONFIG,
+  SIGNALING_URL,
 } from "../constants";
-import io from "socket.io-client";
 
 type Props = {
   lobbyName: string;
 };
 
 export default function useConnectionForPlayer({ lobbyName }: Props) {
-  const [lobbyMessageChannel, setLobbyMessageChannel] = useState<
-    MessageChannelToLobby
-  >();
+  const [lobbyMessageChannel, setLobbyMessageChannel] =
+    useState<MessageChannelToLobby>();
   //Create id on client session to support reconnecting. This will be a secret between server/client.
   const playerId = useMemo(() => {
     const key = `playerId/${lobbyName}`;
@@ -33,17 +31,9 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
     if (lobbyMessageChannel != null) {
       return;
     }
+    const socket = new WebSocket(`${SIGNALING_URL}/${playerId}`);
 
-    const signalClient = io(
-      ...SIGNAL_CLIENT_DEFAULT_PARAMS({
-        query: {
-          joinLobby: lobbyName,
-          from: playerId,
-        },
-      })
-    );
-
-    signalClient.on("connect", async () => {
+    socket.addEventListener("open", async () => {
       const peerConnection = new RTCPeerConnection(DEFAULT_RTC_PEER_CONFIG);
 
       const channel = peerConnection.createDataChannel("Client data channel", {
@@ -57,11 +47,13 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
 
       peerConnection.onicecandidate = (event) => {
         if (event.candidate != null) {
-          signalClient.send({
-            to: lobbyName,
-            from: playerId,
-            data: event.candidate.toJSON(),
-          });
+          socket.send(
+            JSON.stringify({
+              to: lobbyName,
+              from: playerId,
+              data: event.candidate.toJSON(),
+            })
+          );
         }
       };
       let peerDisconnectTimeout: number | undefined;
@@ -81,17 +73,20 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
           }
         }
       };
-
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-      signalClient.send({ data: offer, to: lobbyName, from: playerId });
-      signalClient.on("message", async ({ data }: any) => {
+      socket.addEventListener("message", async ({ data: message }) => {
+        const { data } = JSON.parse(message);
         if (data.type === "answer") {
           await peerConnection.setRemoteDescription(data);
         } else if ("candidate" in data) {
           await peerConnection.addIceCandidate(data);
         }
       });
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(await offer);
+      
+      socket.send(
+        JSON.stringify({ data: offer, to: lobbyName, from: playerId })
+      );
     });
   }, [lobbyMessageChannel, lobbyName]);
 
