@@ -12,8 +12,8 @@ type PlayerFunctions = {
   onTurnInput(callBack: (turn: number) => void): void;
 };
 
-export type LobbyPlayer = PlayerState & PlayerFunctions & { id: string };
-
+export type LobbyPlayer = PlayerState &
+  PlayerFunctions & { id: string; timeout?: number };
 
 const getColorAvailability = (assignedColors: string[] = []) =>
   ALL_COLORS.reduce((acc, color) => {
@@ -25,94 +25,121 @@ const getColorAvailability = (assignedColors: string[] = []) =>
  * The Lobby component is responsible for converting webrtc channels into player objects with state and client messaging.
  */
 export default function useStateForLobby(clientConnections: PlayerConnections) {
-  const createPlayerModifier = (playerKey: string) => (
-    fn: (prev: LobbyPlayer) => LobbyPlayer
-  ) =>
-    setPlayerState(({ [playerKey]: player, ...otherPlayers }) => ({
-      ...otherPlayers,
-      [playerKey]: fn(player)
-    }));
+  const createPlayerModifier =
+    (playerKey: string) => (fn: (prev: LobbyPlayer) => LobbyPlayer) =>
+      setPlayerState(({ [playerKey]: player, ...otherPlayers }) => ({
+        ...otherPlayers,
+        [playerKey]: fn(player),
+      }));
 
   const [playerStates, setPlayerState] = useState<PlayerStates>({});
   const [gameState, setGameState] = useState<GameState>({
-    colorAvailability: getColorAvailability()
+    colorAvailability: getColorAvailability(),
   });
 
   //Create players from connections
   useEffectWithDeps(
-    prevDeps => {
+    (prevDeps) => {
       const [prevConnections] = prevDeps ?? [{}];
-      //if we get new players, we should update colors.
-      let updatedColorAvailability: typeof gameState["colorAvailability"];
-      setPlayerState(playerStates => {
-        let queuespot = 1;
-        return Object.keys(clientConnections).reduce((acc, connKey, index) => {
-          const prevPlayerState = playerStates[connKey];
-          const modifyPlayer = createPlayerModifier(connKey);
-          let playerState =
-            prevPlayerState ??
-            (() => {
-              updatedColorAvailability = updatedColorAvailability ?? {
-                ...gameState.colorAvailability
-              };
-              //Create new player if color can be assigned.
-              const assignedColor = Object.entries(
-                updatedColorAvailability
-              ).find(([_color, avail]) => avail)?.[0];
-              if (assignedColor != null) {
-                updatedColorAvailability[assignedColor] = false;
-                return {
-                  id: connKey,
-                  name: `Player ${index + 1}`,
-                  color: assignedColor,
-                  ready: false,
-                  score: 0,
-                  state: "joining",
-                  latency: 0,
-                  //By saving the functions here they will be in data communicated through datachannel.
-                  //JSON stringify will fix it further down the line, but it's still a bit shoddy.
-                  setState: (state: PlayerState["state"]) =>
-                    modifyPlayer(player => ({ ...player, state })),
-                  setScore: (score: number) =>
-                    modifyPlayer(player => ({ ...player, score })),
-                  onTurnInput: turner =>
-                    clientConnections[connKey]?.on("turn", turner)
-                } as LobbyPlayer;
-              }
-            })();
-          //Connection has no player and no player could be assigned
-          if (playerState == null) {
-            clientConnections[connKey].send("err", {
-              reason: "lobbyFull",
-              queuespot
-            });
-            queuespot++;
-            return acc;
-          }
-          //Wire or re-wire player message handlers for new players or connections
-          const currentConnection = clientConnections[connKey];
-          if (
-            prevPlayerState == null ||
-            currentConnection !== prevConnections[connKey]
-          ) {
-            currentConnection.on("setColor", color => {
-              modifyPlayer(player => ({ ...player, color }));
-            });
-            currentConnection.on("setName", name => {
-              modifyPlayer(player => ({ ...player, name }));
-            });
-            currentConnection.on("setReady", ready => {
-              modifyPlayer(player => ({ ...player, ready }));
-            });
-            playerState = {
-              ...playerState,
-              onTurnInput: turner =>
-                clientConnections[connKey]?.on("turn", turner)
+      setPlayerState((playerStates) => {
+        const connectionKeys = Object.keys(clientConnections);
+        //Timeout disconnecting players.
+        const disconnectingPlayers = Object.keys(playerStates)
+          .filter((id) => !connectionKeys.includes(id))
+          .map((disconnectId) => {
+            clearTimeout(playerStates[disconnectId]?.timeout);
+            return {
+              ...playerStates[disconnectId],
+              timeout: setTimeout(
+                () =>
+                  setPlayerState(
+                    ({ [disconnectId]: _removePlayer, ...playerStates }) =>
+                      playerStates
+                  ),
+                2000
+              ),
             };
-          }
-          acc[connKey] = playerState;
-          return acc;
-        }, {} as typeof playerStates);
+          })
+          .reduce((acc, player) => {
+            acc[player.id] = player;
+            return acc;
+          }, {} as PlayerStates);
+
+        //if we get new players, we should update colors.
+        let updatedColorAvailability: typeof gameState["colorAvailability"];
+        let queuespot = 1;
+        const connectedPlayers = connectionKeys.reduce(
+          (acc, connKey, index) => {
+            const prevPlayerState = playerStates[connKey];
+            clearTimeout(prevPlayerState?.timeout);
+            const modifyPlayer = createPlayerModifier(connKey);
+            let playerState =
+              prevPlayerState ??
+              (() => {
+                updatedColorAvailability = updatedColorAvailability ?? {
+                  ...gameState.colorAvailability,
+                };
+                //Create new player if color can be assigned.
+                const assignedColor = Object.entries(
+                  updatedColorAvailability
+                ).find(([_color, avail]) => avail)?.[0];
+                if (assignedColor != null) {
+                  updatedColorAvailability[assignedColor] = false;
+                  return {
+                    id: connKey,
+                    name: `Player ${index + 1}`,
+                    color: assignedColor,
+                    ready: false,
+                    score: 0,
+                    state: "joining",
+                    latency: 0,
+                    //By saving the functions here they will be in data communicated through datachannel.
+                    //JSON stringify will fix it further down the line, but it's still a bit shoddy.
+                    setState: (state: PlayerState["state"]) =>
+                      modifyPlayer((player) => ({ ...player, state })),
+                    setScore: (score: number) =>
+                      modifyPlayer((player) => ({ ...player, score })),
+                    onTurnInput: (turner) =>
+                      clientConnections[connKey]?.on("turn", turner),
+                  } as LobbyPlayer;
+                }
+              })();
+            //Connection has no player and no player could be assigned
+            if (playerState == null) {
+              clientConnections[connKey].send("err", {
+                reason: "lobbyFull",
+                queuespot,
+              });
+              queuespot++;
+              return acc;
+            }
+            //Wire or re-wire player message handlers for new players or connections
+            const currentConnection = clientConnections[connKey];
+            if (
+              prevPlayerState == null ||
+              currentConnection !== prevConnections[connKey]
+            ) {
+              currentConnection.on("setColor", (color) => {
+                modifyPlayer((player) => ({ ...player, color }));
+              });
+              currentConnection.on("setName", (name) => {
+                modifyPlayer((player) => ({ ...player, name }));
+              });
+              currentConnection.on("setReady", (ready) => {
+                modifyPlayer((player) => ({ ...player, ready }));
+              });
+              playerState = {
+                ...playerState,
+                onTurnInput: (turner) =>
+                  clientConnections[connKey]?.on("turn", turner),
+              };
+            }
+            acc[connKey] = playerState;
+            return acc;
+          },
+          {} as typeof playerStates
+        );
+        return { ...disconnectingPlayers, ...connectedPlayers };
       });
     },
     [clientConnections] as const
@@ -120,20 +147,20 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
 
   //Update gamestate colors from player-updates
   const assignedColors = Object.values(playerStates).map(
-    player => player.color
+    (player) => player.color
   );
   useEffect(() => {
-    setGameState(gameState => ({
+    setGameState((gameState) => ({
       ...gameState,
-      colorAvailability: getColorAvailability(assignedColors)
+      colorAvailability: getColorAvailability(assignedColors),
     }));
   }, [assignedColors.join(":")]);
 
   //Report individual playerstates to clients
   useEffectWithDeps(
-    prevDeps => {
+    (prevDeps) => {
       const [prevClientConnections, prevPlayerStates] = prevDeps ?? [];
-      Object.keys(playerStates).forEach(key => {
+      Object.keys(playerStates).forEach((key) => {
         const newState = playerStates[key];
         const oldState = prevPlayerStates?.[key];
         //send complete state if connection changed or state is new
@@ -157,12 +184,12 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
 
   //Report gamestate to clients
   useEffectWithDeps(
-    prevDeps => {
+    (prevDeps) => {
       const [prevClientConnections, prevGameState] = prevDeps ?? [];
       const stateUpdate =
         prevGameState !== gameState &&
         extractObjectDiff(prevGameState, gameState);
-      Object.keys(clientConnections).forEach(id => {
+      Object.keys(clientConnections).forEach((id) => {
         const currentConn = clientConnections[id];
         //Send complete state to new/updated connections
         if (currentConn != prevClientConnections?.[id]) {

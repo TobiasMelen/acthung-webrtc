@@ -37,26 +37,6 @@ export default function useLobbyConnection(lobbyName: string) {
     [setClientConnections]
   );
 
-  const onClientDataChannel = useCallback(
-    (connection: RTCPeerConnection, id: string, onChannelClose?: () => void) =>
-      ({ channel }: RTCDataChannelEvent) => {
-        channel.onclose = () => {
-          onChannelClose?.();
-          removeStaleConnection(connection);
-        };
-        setClientConnections((connections) => {
-          return {
-            ...connections,
-            [id]: [
-              connection,
-              createMessageChannelToPlayer(connection, channel),
-            ],
-          };
-        });
-      },
-    [setClientConnections]
-  );
-
   useEffect(() => {
     if (socket.status !== "connected") {
       return;
@@ -81,11 +61,26 @@ export default function useLobbyConnection(lobbyName: string) {
             "candidate" in data &&
             clientConnection.addIceCandidate(data)
         );
-        clientConnection.ondatachannel = onClientDataChannel(
-          clientConnection,
-          offerFrom,
-          unbindPeerSignaling
-        );
+        const closeConnection = () => {
+          unbindPeerSignaling?.();
+          removeStaleConnection(clientConnection);
+        };
+        clientConnection.ondatachannel = ({ channel }: RTCDataChannelEvent) => {
+          channel.onclose = closeConnection;
+          setClientConnections((connections) => ({
+            ...connections,
+            [offerFrom]: [
+              clientConnection,
+              createMessageChannelToPlayer(clientConnection, channel),
+            ],
+          }));
+        };
+        clientConnection.onconnectionstatechange = () => {
+          const state = clientConnection.connectionState;
+          if (state == "disconnected") {
+            closeConnection();
+          }
+        };
         await clientConnection.setRemoteDescription(
           new RTCSessionDescription(data)
         );
@@ -95,7 +90,7 @@ export default function useLobbyConnection(lobbyName: string) {
       }
     );
     return unbindSocketListener;
-  }, [socket, onClientDataChannel]);
+  }, [socket]);
 
   const playerConnections = useMemo(
     () =>
