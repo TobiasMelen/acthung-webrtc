@@ -35,6 +35,8 @@ export default function App() {
         const { default: Player } = await import("./Player");
         return <Player lobbyName={hash} />;
       }
+      //assume lobby
+      import("./Lobby");
       return (
         <Banger>
           New{" "}
