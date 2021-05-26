@@ -41,9 +41,10 @@ export default function useJsonWebsocket(url?: string, reconnectAttempts = 5) {
       socket
         ? {
             addListener(listener: (data: any) => void) {
-              socket.addEventListener("message", ({ data }) =>
-                listener(JSON.parse(data))
-              );
+              const fn = ({ data }: MessageEvent<any>) =>
+                listener(JSON.parse(data));
+              socket.addEventListener("message", fn);
+              return () => socket.removeEventListener("message", fn);
             },
             send(data: any) {
               socket.send(JSON.stringify(data));

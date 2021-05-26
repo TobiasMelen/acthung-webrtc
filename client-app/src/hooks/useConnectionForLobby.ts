@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import useSignalClient from "./useSignalClient";
+import { DEFAULT_RTC_PEER_CONFIG, SIGNALING_URL } from "../constants";
 import {
   createMessageChannelToPlayer,
   MessageChannelToPlayer,
 } from "../messaging/dataChannelMessaging";
-import { DEFAULT_RTC_PEER_CONFIG, SIGNALING_URL } from "../constants";
 import useJsonWebsocket from "./useJsonWebsocket";
 
 export type PlayerConnections = {
@@ -39,9 +38,12 @@ export default function useLobbyConnection(lobbyName: string) {
   );
 
   const onClientDataChannel = useCallback(
-    (connection: RTCPeerConnection, id: string) =>
+    (connection: RTCPeerConnection, id: string, onChannelClose?: () => void) =>
       ({ channel }: RTCDataChannelEvent) => {
-        channel.onclose = () => removeStaleConnection(connection);
+        channel.onclose = () => {
+          onChannelClose?.();
+          removeStaleConnection(connection);
+        };
         setClientConnections((connections) => {
           return {
             ...connections,
@@ -59,39 +61,40 @@ export default function useLobbyConnection(lobbyName: string) {
     if (socket.status !== "connected") {
       return;
     }
-    socket.addListener(async ({ from: offerFrom, data }) => {
-      if (data.type !== "offer" || offerFrom == null) {
-        return;
+
+    const unbindSocketListener = socket.addListener(
+      async ({ from: offerFrom, data }) => {
+        if (data.type !== "offer" || offerFrom == null) {
+          return;
+        }
+        const clientConnection = new RTCPeerConnection(DEFAULT_RTC_PEER_CONFIG);
+
+        clientConnection.onicecandidate = (event) =>
+          event.candidate != null &&
+          socket.send({
+            to: offerFrom,
+            data: event.candidate.toJSON(),
+          });
+        const unbindPeerSignaling = socket.addListener(
+          ({ from: candidateFrom, data }) =>
+            candidateFrom === offerFrom &&
+            "candidate" in data &&
+            clientConnection.addIceCandidate(data)
+        );
+        clientConnection.ondatachannel = onClientDataChannel(
+          clientConnection,
+          offerFrom,
+          unbindPeerSignaling
+        );
+        await clientConnection.setRemoteDescription(
+          new RTCSessionDescription(data)
+        );
+        const localDescription = await clientConnection.createAnswer();
+        await clientConnection.setLocalDescription(localDescription);
+        socket.send({ data: localDescription, to: offerFrom });
       }
-      const clientConnection = new RTCPeerConnection(DEFAULT_RTC_PEER_CONFIG);
-      clientConnection.ondatachannel = onClientDataChannel(
-        clientConnection,
-        offerFrom
-      );
-      clientConnection.onicecandidate = (event) =>
-        event.candidate != null &&
-        socket.send({
-          to: offerFrom,
-          data: event.candidate.toJSON(),
-        });
-      clientConnection.oniceconnectionstatechange = () => {
-        clientConnection.iceConnectionState === "failed" ||
-          (clientConnection.iceConnectionState === "disconnected" &&
-            removeStaleConnection(clientConnection));
-      };
-      socket.addListener(
-        ({ from: candidateFrom, data }) =>
-          candidateFrom === offerFrom &&
-          "candidate" in data &&
-          clientConnection.addIceCandidate(data)
-      );
-      await clientConnection.setRemoteDescription(
-        new RTCSessionDescription(data)
-      );
-      const localDescription = await clientConnection.createAnswer();
-      await clientConnection.setLocalDescription(localDescription);
-      socket.send({ data: localDescription, to: offerFrom });
-    });
+    );
+    return unbindSocketListener;
   }, [socket, onClientDataChannel]);
 
   const playerConnections = useMemo(
