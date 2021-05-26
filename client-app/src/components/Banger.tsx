@@ -41,7 +41,6 @@ export default function Banger({
       const fits =
         headingRef.current.clientHeight <= document.body.scrollHeight &&
         headingRef.current.clientWidth <= document.body.clientWidth;
-      console.log(fits);
       fits ? setHeadingSize(em) : shrink(em - 1);
     }
     shrink(startingEm);

@@ -75,7 +75,6 @@ const getUpcomingPosition = (prevPos: Point, currentPos: Point) => {
   };
 };
 
-console.log("adding initial event listener");
 self.addEventListener(
   "message",
   function initialMessageHandler(ev: MessageEvent) {

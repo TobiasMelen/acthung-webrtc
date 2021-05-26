@@ -14,4 +14,10 @@ export default defineConfig(({ command, mode }) => ({
   plugins: [command == "serve" && require("@prefresh/vite")()].filter(
     (plugin) => !!plugin
   ),
+  define: {
+    global: "window",
+  },
+  build: {
+    sourcemap: true,
+  },
 }));

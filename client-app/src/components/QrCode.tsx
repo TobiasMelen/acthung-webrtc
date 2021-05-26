@@ -1,5 +1,5 @@
 import { QRCode as Qr } from "react-qr-svg";
-import React, { useState } from "react";
+import React from "react";
 type Props = {
   style?: React.CSSProperties;
   colorScheme?: "onDarkBg" | "onWhiteBg";

@@ -5,35 +5,18 @@ import {
   MessageChannelToPlayer,
 } from "../messaging/dataChannelMessaging";
 import { DEFAULT_RTC_PEER_CONFIG, SIGNALING_URL } from "../constants";
+import useJsonWebsocket from "./useJsonWebsocket";
 
 export type PlayerConnections = {
   [id: string]: MessageChannelToPlayer;
 };
-
-type OfferMessage = { from?: string; data: RTCSessionDescriptionInit };
-
-type CandidateMessage = { from?: string; data: RTCIceCandidateInit | {} };
 
 export default function useLobbyConnection(lobbyName: string) {
   const [clientConnections, setClientConnections] = useState<{
     [id: string]: [RTCPeerConnection, MessageChannelToPlayer];
   }>({});
 
-  // const [signalClient] = useSignalClient(
-  //   useMemo(
-  //     () => ({
-  //       query: {
-  //         hostLobby: lobbyName,
-  //       },
-  //     }),
-  //     [lobbyName]
-  //   )
-  // );
-
-  const socket = useMemo(
-    () => new WebSocket(`${SIGNALING_URL}/${lobbyName}`),
-    [SIGNALING_URL, lobbyName]
-  );
+  const socket = useJsonWebsocket(`${SIGNALING_URL}/${lobbyName}`);
 
   const removeStaleConnection = useCallback(
     (staleConnection: RTCPeerConnection) => {
@@ -73,8 +56,10 @@ export default function useLobbyConnection(lobbyName: string) {
   );
 
   useEffect(() => {
-    socket.addEventListener("message", async ({ data: message }) => {
-      const { from: offerFrom, data } = JSON.parse(message) as OfferMessage;
+    if (socket.status !== "connected") {
+      return;
+    }
+    socket.addListener(async ({ from: offerFrom, data }) => {
       if (data.type !== "offer" || offerFrom == null) {
         return;
       }
@@ -85,33 +70,27 @@ export default function useLobbyConnection(lobbyName: string) {
       );
       clientConnection.onicecandidate = (event) =>
         event.candidate != null &&
-        socket.send(
-          JSON.stringify({
-            to: offerFrom,
-            data: event.candidate.toJSON(),
-          })
-        );
+        socket.send({
+          to: offerFrom,
+          data: event.candidate.toJSON(),
+        });
       clientConnection.oniceconnectionstatechange = () => {
         clientConnection.iceConnectionState === "failed" ||
           (clientConnection.iceConnectionState === "disconnected" &&
             removeStaleConnection(clientConnection));
       };
-      socket.addEventListener("message", ({ data: message }) => {
-        const { from: candidateFrom, data } = JSON.parse(
-          message
-        ) as CandidateMessage;
-        return (
+      socket.addListener(
+        ({ from: candidateFrom, data }) =>
           candidateFrom === offerFrom &&
           "candidate" in data &&
           clientConnection.addIceCandidate(data)
-        );
-      });
+      );
       await clientConnection.setRemoteDescription(
         new RTCSessionDescription(data)
       );
       const localDescription = await clientConnection.createAnswer();
       await clientConnection.setLocalDescription(localDescription);
-      socket.send(JSON.stringify({ data: localDescription, to: offerFrom }));
+      socket.send({ data: localDescription, to: offerFrom });
     });
   }, [socket, onClientDataChannel]);
 
