@@ -87,7 +87,7 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
       }
     });
     peerConnection.createOffer().then(async (offer) => {
-      window.setTimeout(() => {
+      timeout = window.setTimeout(() => {
         setConnectionStatus((connectionStatus) =>
           connectionStatus !== "ERROR" ? "NO_LOBBY" : "ERROR"
         );
