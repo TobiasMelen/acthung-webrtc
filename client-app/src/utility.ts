@@ -22,3 +22,19 @@ export function extractObjectDiff<T>(
 export function inlineThrow(err: string | Error): never {
   throw typeof err === "string" ? new Error(err) : err;
 }
+
+//https://gist.github.com/LeverOne/1308368
+export function uuidV4() {
+  let result = "";
+  for (
+    let step = 0;
+    step++ < 36;
+    result +=
+      (step * 51) & 52
+        ? (step ^ 15 ? 8 ^ (Math.random() * (step ^ 20 ? 16 : 4)) : 4).toString(
+            16
+          )
+        : "-"
+  );
+  return result;
+}

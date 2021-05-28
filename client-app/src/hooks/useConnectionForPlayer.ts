@@ -1,11 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
-import * as uuid from "uuid";
 import {
   MessageChannelToLobby,
   createMessageChannelToLobby,
 } from "../messaging/dataChannelMessaging";
 import { DEFAULT_RTC_PEER_CONFIG, SIGNALING_URL } from "../constants";
 import useJsonWebsocket from "./useJsonWebsocket";
+import { uuidV4 } from "../utility";
 
 type Props = {
   lobbyName: string;
@@ -19,7 +19,7 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
     const key = `playerId/${lobbyName}`;
     let sessionId = sessionStorage[key];
     if (sessionId == null) {
-      sessionId = uuid.v4()
+      sessionId = uuidV4()
       sessionStorage[key] = sessionId;
     }
     return sessionId;
