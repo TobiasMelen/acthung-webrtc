@@ -1,5 +1,5 @@
-import { QRCode as Qr } from "react-qr-svg";
-import React from "react";
+import QR from "../qr";
+import React, { useEffect, useRef } from "react";
 type Props = {
   style?: React.CSSProperties;
   colorScheme?: "onDarkBg" | "onWhiteBg";
@@ -7,22 +7,12 @@ type Props = {
   children: string;
 };
 
-export default function QrCode({
-  children,
-  style,
-}: Props) {
-  return (
-    <Qr
-      value={children}
-      bgColor="white"
-      fgColor="black"
-      style={{
-        backgroundColor: "white",
-        display: "block",
-        position: "relative",
-        ...style,
-      }}
-      preserveAspectRatio="xMidYMax slice"
-    />
-  );
+export default function QrCode({ children, style }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    canvasRef.current &&
+      children &&
+      QR().writeToCanvas(children, canvasRef.current);
+  }, [canvasRef.current, children]);
+  return <canvas style={style} ref={canvasRef} />;
 }
