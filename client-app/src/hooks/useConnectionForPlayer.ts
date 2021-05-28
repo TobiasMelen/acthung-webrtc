@@ -11,19 +11,26 @@ type Props = {
   lobbyName: string;
 };
 
+type ConnectionStatus = "CONNECTING" | "RECONNECTING" | "NO_LOBBY" | "ERROR";
+
 export default function useConnectionForPlayer({ lobbyName }: Props) {
   const [lobbyMessageChannel, setLobbyMessageChannel] =
     useState<MessageChannelToLobby>();
   //Create id on client session to support reconnecting. This will be a secret between server/client.
-  const playerId = useMemo(() => {
+  const [playerId, isReconnect] = useMemo(() => {
     const key = `playerId/${lobbyName}`;
-    let sessionId = sessionStorage[key];
-    if (sessionId == null) {
-      sessionId = uuidV4()
-      sessionStorage[key] = sessionId;
+    const prevSessionId = sessionStorage[key];
+    if (prevSessionId) {
+      return [prevSessionId, true];
     }
-    return sessionId;
+    const sessionId = uuidV4();
+    sessionStorage[key] = sessionId;
+    return [sessionId, false];
   }, [lobbyName]);
+
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
+    isReconnect ? "RECONNECTING" : "CONNECTING"
+  );
 
   //only keep ws connection before webrtc is established
   const socket = useJsonWebsocket(
@@ -54,15 +61,14 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
         });
       }
     };
-    let peerDisconnectTimeout: number | undefined;
     peerConnection.oniceconnectionstatechange = () => {
-      //clear disconnect timeout if set.
-      clearTimeout(peerDisconnectTimeout);
-      const disconnect = () =>
+      const disconnect = () => {
         setLobbyMessageChannel((channel) => {
           channel?.destroy();
           return undefined;
         });
+        setConnectionStatus("ERROR");
+      };
       switch (peerConnection.iceConnectionState) {
         case "disconnected":
         case "failed": {
@@ -71,7 +77,9 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
         }
       }
     };
+    let timeout: number;
     socket.addListener(async ({ data }) => {
+      clearTimeout(timeout);
       if (data.type === "answer") {
         await peerConnection.setRemoteDescription(data);
       } else if ("candidate" in data) {
@@ -79,10 +87,15 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
       }
     });
     peerConnection.createOffer().then(async (offer) => {
+      window.setTimeout(() => {
+        setConnectionStatus((connectionStatus) =>
+          connectionStatus !== "ERROR" ? "NO_LOBBY" : "ERROR"
+        );
+      }, 1000);
       await peerConnection.setLocalDescription(offer);
       socket.send({ data: offer, to: lobbyName, from: playerId });
     });
   }, [lobbyMessageChannel, lobbyName, socket]);
 
-  return lobbyMessageChannel;
+  return [lobbyMessageChannel, connectionStatus] as const;
 }

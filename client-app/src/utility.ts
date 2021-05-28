@@ -38,3 +38,10 @@ export function uuidV4() {
   );
   return result;
 }
+
+export function match<TMatch extends keyof any, TResult>(
+  value: TMatch,
+  output: Record<TMatch, TResult>
+){
+  return output[value];
+}

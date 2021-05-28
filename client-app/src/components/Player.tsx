@@ -6,6 +6,7 @@ import Button from "./Button";
 import Banger from "./Banger";
 import useConnectionForPlayer from "../hooks/useConnectionForPlayer";
 import useStateForPlayer from "../hooks/useStateForPlayer";
+import { match } from "../utility";
 
 type Props = {
   lobbyName: string;
@@ -14,16 +15,31 @@ type Props = {
 type ClientPlayer = ReturnType<typeof useStateForPlayer>[0];
 
 export default function Client({ lobbyName = "new" }: Props) {
-  const channel = useConnectionForPlayer({ lobbyName });
+  const [channel, connectionStatus] = useConnectionForPlayer({ lobbyName });
   const [player, gameState] = useStateForPlayer(channel);
   const renderCore = useCallback(() => {
-    if (player == null) {
-      return <Banger>Connecting</Banger>;
+    if (player == null || channel == null) {
+      return (
+        <Banger key={connectionStatus}>
+          {match(connectionStatus, {
+            CONNECTING: "Connecting",
+            RECONNECTING: "Reconnecting",
+            ERROR: (
+              <>
+                <span style={{color:"red"}}>Error connecting!</span>
+                <br />
+                Make sure you are connected to the same Wifi as host.
+              </>
+            ),
+            NO_LOBBY: "Lobby didn't respond 😞",
+          })}
+        </Banger>
+      );
     }
     switch (player.state) {
       case "joining":
         return player.ready ? (
-          <Banger>Waiting</Banger>
+          <Banger>Waiting. Look at big screen.</Banger>
         ) : (
           <EnterCreds {...player} colors={gameState?.colorAvailability} />
         );
@@ -36,9 +52,9 @@ export default function Client({ lobbyName = "new" }: Props) {
           />
         );
       case "dead":
-        return <Banger>You dead</Banger>;
+        return <Banger>You crashed</Banger>;
     }
-  }, [player, gameState]);
+  }, [player, gameState, connectionStatus]);
   return (
     <PlayerLayout>
       <Latency latency={player?.latency} />
@@ -79,7 +95,7 @@ function EnterCreds({
           flexDirection: "row",
           width: "100%",
           flexWrap: "wrap",
-          justifyContent: "center"
+          justifyContent: "center",
         }}
       >
         {Object.entries(colors).map(([color, available]) => {
@@ -104,7 +120,7 @@ function EnterCreds({
                 opacity: isPlayerColor || available ? 1 : 0.2,
                 boxShadow: isPlayerColor
                   ? "inset 0 0 0 5px rgba(0,0,0,0.1)"
-                  : "none"
+                  : "none",
               }}
             >
               <figcaption style={{ visibility: "hidden" }}>{color}</figcaption>
@@ -132,7 +148,7 @@ const Latency = ({ latency }: { latency?: number }) =>
         position: "absolute",
         top: 0,
         right: 0,
-        WebkitUserSelect: "none"
+        WebkitUserSelect: "none",
       }}
     >
       {latency} ms
