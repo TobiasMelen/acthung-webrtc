@@ -16,37 +16,35 @@ const verticalFlex: CSSProperties = {
 
 export default function Waiting({ url, players }: Props) {
   return (
-    <Layout>
+    <Layout style={{ justifyContent: "space-around" }}>
       <div />
       <div
         style={{
-          width: "50%",
-          maxHeight: "75%",
+          width: "40%",
         }}
       >
         <QrCode
           colorScheme="onWhiteBg"
           padding={2}
           style={{
-            maxWidth: 600,
-            maxHeight: 600,
+            width: "100%",
             margin: "0 auto 2em auto",
           }}
         >
           {url}
         </QrCode>
         <a
-        href={url}
-        style={{
-          textAlign: "center",
-          display: "block",
-          fontSize: "0.8em",
-          marginTop: "0.8em",
-          alignSelf: "center",
-        }}
-      >
-        {url}
-      </a>
+          href={url}
+          style={{
+            textAlign: "center",
+            display: "block",
+            fontSize: "0.8em",
+            marginTop: "0.8em",
+            alignSelf: "center",
+          }}
+        >
+          {url}
+        </a>
       </div>
       <div
         style={{

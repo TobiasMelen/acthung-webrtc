@@ -2,12 +2,12 @@ import {
   CSSProperties,
   useState,
   SyntheticEvent,
-  PropsWithChildren
+  PropsWithChildren,
 } from "react";
 import React from "react";
 import Triangle, { TriangleDirection } from "./Triangle";
 import useMediaMatch from "../hooks/useMediaMatch";
-import PlayerLayout from "./Layout";
+import Layout from "./Layout";
 
 type Props = PropsWithChildren<{
   latency?: number;
@@ -22,7 +22,7 @@ export default function PlayerControls({ setTurn, color, children }: Props) {
   const arrowDirections = useMediaMatch<[TriangleDirection, TriangleDirection]>(
     {
       "(orientation: landscape)": ["left", "right"],
-      "(orientation: portrait)": ["up", "down"]
+      "(orientation: portrait)": ["up", "down"],
     }
   )[0];
 
@@ -43,14 +43,14 @@ export default function PlayerControls({ setTurn, color, children }: Props) {
     };
     return {
       onPress: handle(true),
-      onRelease: handle(false)
+      onRelease: handle(false),
     };
   };
   const turnMinus = useInputHandlers(-1, setMinusPressed);
   const turnPlus = useInputHandlers(1, setPlusPressed);
 
   return (
-    <PlayerLayout centered={false}>
+    <Layout style={{ justifyContent: "space-between" }}>
       <TurnButton
         color={color}
         direction={arrowDirections?.[0] ?? "left"}
@@ -64,7 +64,7 @@ export default function PlayerControls({ setTurn, color, children }: Props) {
         pressed={plusPressed}
         handler={turnPlus}
       />
-    </PlayerLayout>
+    </Layout>
   );
 }
 
@@ -72,7 +72,7 @@ const TurnButton = ({
   color,
   pressed,
   handler,
-  direction
+  direction,
 }: {
   color?: string;
   pressed: boolean;

@@ -35,7 +35,6 @@ export default function usePingLatency(
         setLatency(
           Math.round(pings.reduce((acc, ping) => acc + ping, 0) / receivedPings)
         );
-        pings.fill(0);
         receivedPings = 0;
         sentPings = 0;
       }
