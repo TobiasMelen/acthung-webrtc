@@ -22,24 +22,8 @@ export const ALL_COLORS = [
   "#fff",
 ];
 
-export const SIGNAL_CLIENT_DEFAULT_PARAMS = (
-  opts: SocketIOClient.ConnectOpts
-) =>
-  [
-    SIGNALING_URL,
-    {
-      transports: ["websocket"],
-      ...opts,
-    } as SocketIOClient.ConnectOpts,
-  ] as const;
-
 export const DEFAULT_RTC_PEER_CONFIG: RTCConfiguration = {
   iceServers: [
-    { urls: ["stun:stun.l.google.com:19302"] },
-    {
-      urls: ["turn:relay.backups.cz"],
-      credential: "webrtc",
-      username: "webrtc",
-    },
+    { urls: ["stun:stun.l.google.com:19302"] }
   ],
 };
