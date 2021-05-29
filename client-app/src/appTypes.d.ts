@@ -32,3 +32,7 @@ declare module "*?worker" {
   };
   export default workerImport;
 }
+declare module "*.aac" {
+  const value: string;
+  export default value;
+}

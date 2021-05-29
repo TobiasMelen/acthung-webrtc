@@ -7,6 +7,7 @@ import Banger from "./Banger";
 import useConnectionForPlayer from "../hooks/useConnectionForPlayer";
 import useStateForPlayer from "../hooks/useStateForPlayer";
 import { match } from "../utility";
+import wilhelm from "../../assets/wilhelm.aac";
 
 type Props = {
   lobbyName: string;
@@ -14,9 +15,26 @@ type Props = {
 
 type ClientPlayer = ReturnType<typeof useStateForPlayer>[0];
 
+// https://stackoverflow.com/a/54119854 ???
+const AudioContext =
+  window.AudioContext ||
+  //@ts-ignore
+  window.webkitAudioContext;
+const audioCtx = new AudioContext();
+const deathscream = new Audio(wilhelm);
+deathscream.load();
+
 export default function Client({ lobbyName = "new" }: Props) {
   const [channel, connectionStatus] = useConnectionForPlayer({ lobbyName });
   const [player, gameState] = useStateForPlayer(channel);
+  useEffect(() => {
+    if (player?.state === "dead") {
+      deathscream.muted = false;
+      deathscream.volume = 0.3;
+      deathscream.playbackRate = 2 * Math.random() + 0.5;
+      deathscream.play();
+    }
+  }, [player?.state]);
   const renderCore = useCallback(() => {
     if (player == null || channel == null) {
       return (
@@ -41,7 +59,14 @@ export default function Client({ lobbyName = "new" }: Props) {
         return player.ready ? (
           <Banger>Waiting. Look at big screen.</Banger>
         ) : (
-          <EnterCreds {...player} colors={gameState?.colorAvailability} />
+          <EnterCreds
+            {...player}
+            colors={gameState?.colorAvailability}
+            onSubmit={() => {
+              deathscream.muted = true;
+              deathscream.play();
+            }}
+          />
         );
       case "playing":
         return (
@@ -66,7 +91,10 @@ export default function Client({ lobbyName = "new" }: Props) {
 function EnterCreds({
   colors = {},
   ...props
-}: ClientPlayer & { colors?: GameState["colorAvailability"] }) {
+}: ClientPlayer & {
+  colors?: GameState["colorAvailability"];
+  onSubmit?(): void;
+}) {
   const [hasInput, setHasInput] = useState(false);
   const hasDefaultName = !hasInput && props.name.startsWith("Player ");
   const onChangeInput = useCallback(
@@ -132,7 +160,10 @@ function EnterCreds({
         <Button
           color={props.color}
           disabled={!props.name}
-          onClick={() => props.setReady(true)}
+          onClick={() => {
+            props.onSubmit?.();
+            props.setReady(true);
+          }}
         >
           Ready!
         </Button>
