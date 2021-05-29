@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import PlayerControls from "./PlayerControls";
 import PlayerLayout from "./Layout";
 import Input from "./Input";
@@ -26,7 +26,7 @@ export default function Client({ lobbyName = "new" }: Props) {
             RECONNECTING: "Reconnecting",
             ERROR: (
               <>
-                <span style={{color:"red"}}>Error connecting!</span>
+                <span style={{ color: "red" }}>Error connecting!</span>
                 <br />
                 Make sure you are connected to the same Wifi as host.
               </>

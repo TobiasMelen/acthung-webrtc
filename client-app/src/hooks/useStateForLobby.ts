@@ -3,6 +3,11 @@ import { PlayerConnections } from "./useConnectionForLobby";
 import useEffectWithDeps from "./useEffectWithDeps";
 import { ALL_COLORS } from "../constants";
 import { extractObjectDiff } from "../utility";
+import {
+  MessageChannelToPlayer,
+  MessageTypesToLobby,
+  MessageTypesToPlayer,
+} from "../messaging/dataChannelMessaging";
 
 type PlayerStates = { [id: string]: LobbyPlayer };
 
@@ -35,6 +40,7 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
   const [playerStates, setPlayerState] = useState<PlayerStates>({});
   const [gameState, setGameState] = useState<GameState>({
     colorAvailability: getColorAvailability(),
+    allowSinglePlayer: false,
   });
 
   //Create players from connections
@@ -119,19 +125,26 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
               prevPlayerState == null ||
               currentConnection !== prevConnections[connKey]
             ) {
-              currentConnection.on("setColor", (color) => {
-                modifyPlayer((player) => ({ ...player, color }));
-              });
-              currentConnection.on("setName", (name) => {
-                modifyPlayer((player) => ({ ...player, name }));
-              });
-              currentConnection.on("setReady", (ready) => {
-                modifyPlayer((player) => ({ ...player, ready }));
-              });
+              const bindMessageToStateKey = <TModel>(
+                eventName: MessageTypesToLobby,
+                modifier: (cb: (input: TModel) => any) => void,
+                keyName: keyof TModel
+              ) => {
+                currentConnection.on(eventName, (data) =>
+                  modifier((old) => ({ ...old, [keyName]: data }))
+                );
+              };
+              bindMessageToStateKey("setColor", modifyPlayer, "color");
+              bindMessageToStateKey("setName", modifyPlayer, "name");
+              bindMessageToStateKey("setReady", modifyPlayer, "ready");
+              bindMessageToStateKey(
+                "allowSinglePlayer",
+                setGameState,
+                "allowSinglePlayer"
+              );
               playerState = {
                 ...playerState,
-                onTurnInput: (turner) =>
-                  clientConnections[connKey]?.on("turn", turner),
+                onTurnInput: (turner) => currentConnection.on("turn", turner),
               };
             }
             acc[connKey] = playerState;
@@ -206,5 +219,5 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
 
   const players = useMemo(() => Object.values(playerStates), [playerStates]);
 
-  return players;
+  return [players, gameState] as const;
 }

@@ -32,20 +32,26 @@ const createIntermission = (
 
 export default function Lobby({ lobbyName }: { lobbyName: string }) {
   const connections = useLobbyConnection(lobbyName);
-  const players = useStateForLobby(connections);
+  const [players, gameState] = useStateForLobby(connections);
   return (
     <GameSettingsProvider>
-      <Game lobbyName={lobbyName} players={players} />
+      <Game
+        lobbyName={lobbyName}
+        players={players}
+        allowSinglePlayer={gameState.allowSinglePlayer}
+      />
     </GameSettingsProvider>
   );
 }
 
 export function Game({
   lobbyName,
+  allowSinglePlayer = false,
   players,
 }: {
   lobbyName: string;
   players: LobbyPlayer[];
+  allowSinglePlayer: boolean;
 }) {
   const [gameState, setGameState] = useState<GameState>({ type: "lobby" });
 
@@ -88,6 +94,7 @@ export function Game({
     if (
       gameState.type === "lobby" &&
       players.length &&
+      (players.length > 1 || allowSinglePlayer) &&
       players.every((player) => player.ready)
     ) {
       setGameState(createIntermission());

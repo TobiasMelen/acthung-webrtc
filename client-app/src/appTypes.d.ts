@@ -9,6 +9,7 @@ type PlayerState = {
 
 type GameState = {
   colorAvailability: { [color: string]: boolean };
+  allowSinglePlayer: boolean;
 };
 
 type PromiseResult<T> = T extends Promise<infer Result> ? Result : never;

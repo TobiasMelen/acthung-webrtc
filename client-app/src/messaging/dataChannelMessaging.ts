@@ -6,20 +6,24 @@ import {
 } from "./valueConverters";
 import setupMessageChannel, { Converter } from "./setupMessageChannel";
 
-const messagesFromLobby = {
+const messagesToPlayer = {
   playerState: jsonConverter as Converter<Partial<PlayerState>>,
   gameState: jsonConverter as Converter<Partial<GameState>>,
   ping: numberConverter,
   err: jsonConverter,
 };
 
-const messagesFromPlayer = {
+const messagesToLobby = {
   setColor: stringConverter,
   setReady: booleanConverter,
   setName: stringConverter,
+  allowSinglePlayer: booleanConverter,
   turn: numberConverter,
   ping: numberConverter,
 };
+
+export type MessageTypesToPlayer = keyof typeof messagesToPlayer;
+export type MessageTypesToLobby = keyof typeof messagesToLobby;
 
 export type MessageChannelToPlayer = ReturnType<
   typeof createMessageChannelToPlayer
@@ -30,8 +34,8 @@ export function createMessageChannelToPlayer(
   dataChannel: RTCDataChannel
 ) {
   return setupMessageDataChannel(connection, dataChannel)(
-    messagesFromLobby,
-    messagesFromPlayer,
+    messagesToPlayer,
+    messagesToLobby,
     "ping"
   );
 }
@@ -45,8 +49,8 @@ export function createMessageChannelToLobby(
   dataChannel: RTCDataChannel
 ) {
   return setupMessageDataChannel(connection, dataChannel)(
-    messagesFromPlayer,
-    messagesFromLobby
+    messagesToLobby,
+    messagesToPlayer
   );
 }
 
