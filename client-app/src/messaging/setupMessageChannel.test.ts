@@ -4,6 +4,7 @@ import {
   booleanConverter,
   stringConverter,
   jsonConverter,
+  voidConverter,
 } from "./valueConverters";
 import { EventEmitter } from "events";
 import test from "../test";
@@ -13,7 +14,7 @@ const messages = {
   testBool: booleanConverter,
   testStr: stringConverter,
   testJSON: jsonConverter,
-  bounce: stringConverter,
+  bounce: voidConverter,
 };
 
 const emitter = new EventEmitter();
@@ -77,7 +78,7 @@ timeoutTest("String is sent over message channel", (done, assert) => {
 timeoutTest("Boolean is sent over message channel", (done, assert) => {
   const sendvalue = true;
   receiver.on("testBool", (val) => {
-    assert(val === false);
+    assert(val === sendvalue);
     done();
   });
   sender.send("testBool", sendvalue);
