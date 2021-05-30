@@ -14,7 +14,7 @@ const messages = {
   testBool: booleanConverter,
   testStr: stringConverter,
   testJSON: jsonConverter,
-  bounce: voidConverter,
+  bounce: stringConverter,
 };
 
 const emitter = new EventEmitter();
@@ -95,6 +95,7 @@ timeoutTest("JSON is sent over message channel", (done, assert) => {
 
 timeoutTest("Configured values bounce", (done, assert) => {
   sender.on("bounce", (val) => {
+    assert(val === "BOUNCE!");
     done();
   });
   sender.send("bounce", "BOUNCE!");
