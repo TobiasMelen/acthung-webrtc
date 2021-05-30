@@ -13,6 +13,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: client-app/node_modules
+          key: ${{ runner.os }}-build-client-app-${{ hashFiles('client-app/yarn.lock') }}
 
       - name: Install and build
         run: |
