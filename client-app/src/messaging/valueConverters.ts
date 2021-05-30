@@ -17,7 +17,7 @@ export const booleanConverter: Converter<boolean> = {
 
 //This should not be needed, but having a special case for no message conversion will make channel impl. even messier.
 //Bench before changing
-const passValueConverter = <T extends string | void>(): Converter<T> => ({
+export const passValueConverter = <T extends string | void>(): Converter<T> => ({
   serialize: input => input,
   deserialize: result => result as T
 });

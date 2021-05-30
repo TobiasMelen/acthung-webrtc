@@ -5,6 +5,7 @@ import {
   stringConverter,
   jsonConverter,
   voidConverter,
+  passValueConverter,
 } from "./valueConverters";
 import { EventEmitter } from "events";
 import test from "../test";
@@ -14,7 +15,7 @@ const messages = {
   testBool: booleanConverter,
   testStr: stringConverter,
   testJSON: jsonConverter,
-  bounce: stringConverter,
+  bounce: passValueConverter<"BOUNCE!">(),
 };
 
 const emitter = new EventEmitter();
