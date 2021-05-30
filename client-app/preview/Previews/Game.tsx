@@ -9,5 +9,5 @@ export const props = {
 
 export default function GamePreview(properties: typeof props) {
   const players = useMockPlayers(properties);
-  return <Game lobbyName="preview-game" players={players} />;
+  return <Game lobbyName="preview-game" players={players} allowSinglePlayer={false} />;
 }

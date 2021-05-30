@@ -3,19 +3,40 @@ import {
   numberConverter,
   booleanConverter,
   stringConverter,
-  jsonConverter
+  jsonConverter,
 } from "./valueConverters";
 import { EventEmitter } from "events";
+import test from "../test";
 
 const messages = {
   testNr: numberConverter,
   testBool: booleanConverter,
   testStr: stringConverter,
   testJSON: jsonConverter,
-  bounce: stringConverter
+  bounce: stringConverter,
 };
 
 const emitter = new EventEmitter();
+
+const timeoutTest = (
+  message: string,
+  handler: (resolve: () => void, assert: (condition: boolean) => void) => void,
+  timeoutMs = 100
+) =>
+  test(
+    message,
+    (assert) =>
+      new Promise<void>((res, reject) => {
+        const timeout = setTimeout(() => {
+          assert(false);
+          reject();
+        }, timeoutMs);
+        handler(() => {
+          clearTimeout(timeout);
+          res();
+        }, assert);
+      })
+  );
 
 const sender = setupMessageChannel({
   send(data) {
@@ -35,46 +56,46 @@ const receiver = setupMessageChannel({
   },
 })(messages, messages, "bounce");
 
-test("Number is sent over message channel", done => {
+timeoutTest("Number is sent over message channel", (resolve, assert) => {
   const sendvalue = 42;
-  receiver.on("testNr", val => {
-    expect(val).toBe(sendvalue);
-    done();
+  receiver.on("testNr", (val) => {
+    assert(val === 42);
+    resolve();
   });
   sender.send("testNr", sendvalue);
-}, 100);
+});
 
-test("String is sent over message channel", done => {
+timeoutTest("String is sent over message channel", (done, assert) => {
   const sendvalue = "FourtyTwo";
-  receiver.on("testStr", val => {
-    expect(val).toBe(sendvalue);
+  receiver.on("testStr", (val) => {
+    assert(val == sendvalue);
     done();
   });
   sender.send("testStr", sendvalue);
-}, 100);
+});
 
-test("Boolean is sent over message channel", done => {
+timeoutTest("Boolean is sent over message channel", (done, assert) => {
   const sendvalue = true;
-  receiver.on("testBool", val => {
-    expect(val).toBe(sendvalue);
+  receiver.on("testBool", (val) => {
+    assert(val === false);
     done();
   });
   sender.send("testBool", sendvalue);
-}, 100);
+});
 
-test("JSON is sent over message channel", done => {
+timeoutTest("JSON is sent over message channel", (done, assert) => {
   const sendvalue = { number: 42 };
-  receiver.on("testJSON", val => {
-    expect(val.number).toBe(sendvalue.number);
+  receiver.on("testJSON", (val) => {
+    assert(val.number === sendvalue.number);
     done();
   });
   sender.send("testJSON", sendvalue);
-}, 100);
+});
 
-test("Configured values bounce", done => {
-  sender.on("bounce", val => {
-    expect(val).toBe("BOUNCE!");
+timeoutTest("Configured values bounce", (done, assert) => {
+  sender.on("bounce", (val) => {
+    assert(val === "BOUNCE!");
     done();
   });
   sender.send("bounce", "BOUNCE!");
-}, 100);
+});

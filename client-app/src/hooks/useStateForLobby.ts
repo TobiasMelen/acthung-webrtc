@@ -56,7 +56,7 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
             clearTimeout(playerStates[disconnectId]?.timeout);
             return {
               ...playerStates[disconnectId],
-              timeout: setTimeout(
+              timeout: window.setTimeout(
                 () =>
                   setPlayerState(
                     ({ [disconnectId]: _removePlayer, ...playerStates }) =>

@@ -11,18 +11,19 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Install and build
-      run: |
-        cd client-app
-        yarn
-        yarn build --base /${{ github.event.repository.name }}/
+      - name: Install and build
+        run: |
+          cd client-app
+          yarn --prod
+          yarn test || exit 1
+          yarn build --base /${{ github.event.repository.name }}/
 
-    - name: Deploy
-      uses: JamesIves/github-pages-deploy-action@releases/v3
-      with:
-        GITHUB_TOKEN: ${{ secrets.GH_DEPLOYMENT_TOKEN }}
-        BRANCH: gh-pages
-        FOLDER: client-app/dist
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@releases/v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GH_DEPLOYMENT_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: client-app/dist
