@@ -1,9 +1,0 @@
-[Unit]
-Description=Rust signaling server
-
-[Service]
-Type=simple
-ExecStart=signaling-app-rust
-
-[Install]
-WantedBy=multi-user.target

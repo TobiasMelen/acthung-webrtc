@@ -4,8 +4,8 @@ on:
     branches:
       - master
     paths:
-      - signaling-app-rust/**
-      - .github/workflows/signaling-app-rust-droplet.yml
+      - signaling-app/**
+      - .github/workflows/signaling-app-droplet.yml
 jobs:
   build-and-deploy:
     name: Compile rust, deploy to DO droplet
@@ -20,18 +20,22 @@ jobs:
             profile: minimal
       - uses: Swatinem/rust-cache@v1
         with: 
-          working-directory: signaling-app-rust
+          working-directory: signaling-app
       - name: Compile Rust
         run: |
-          cd signaling-app-rust
+          cd signaling-app
           cargo build --release
+      - name: Deploy binary with rsync
+      - with:
+          RSYNC_PASSWORD: ${{ secrects.SSH_PASSWORD }}
+        run: 
       - name: Deploy binary
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SSH_ADDRESS }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          source: ././signaling-app-rust/signaling-app-rust.service, signaling-app-rust/target/release/signaling-app-rust
+          source: ././signaling-app/signaling-app-rust.service, signaling-app/target/release/signaling-app-rust
           target: signaling-app-rust-deployment
           strip_components: 3
           overwrite: true

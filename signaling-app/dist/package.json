@@ -1,9 +1,0 @@
-{
-    "name": "signaling-app",
-    "main": "index.js",
-    "private": true,
-    "scripts": {
-        "start": "node index.js"
-    }
-  }
-  

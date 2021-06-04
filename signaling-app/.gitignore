@@ -1,7 +1,1 @@
-node_modules
-yarn-error.log
-.cache
-dist/**/*
-!dist/app.yaml
-!dist/web.config
-!dist/package.json
+target
