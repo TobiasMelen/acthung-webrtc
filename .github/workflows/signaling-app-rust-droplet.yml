@@ -25,10 +25,6 @@ jobs:
         run: |
           cd signaling-app
           cargo build --release
-      - name: Deploy binary with rsync
-      - with:
-          RSYNC_PASSWORD: ${{ secrects.SSH_PASSWORD }}
-        run: 
       - name: Deploy binary
         uses: appleboy/scp-action@master
         with:
