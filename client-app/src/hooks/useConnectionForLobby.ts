@@ -101,5 +101,5 @@ export default function useLobbyConnection(lobbyName: string) {
     [clientConnections]
   );
 
-  return playerConnections;
+  return [socket.status, playerConnections] as const;
 }

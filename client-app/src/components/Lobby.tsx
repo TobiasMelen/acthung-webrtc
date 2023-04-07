@@ -31,8 +31,26 @@ const createIntermission = (
 });
 
 export default function Lobby({ lobbyName }: { lobbyName: string }) {
-  const connections = useLobbyConnection(lobbyName);
+  const [socketStatus, connections] = useLobbyConnection(lobbyName);
   const [players, gameState] = useStateForLobby(connections);
+  if (socketStatus === "connecting") {
+    return (
+      <Banger style={{ animation: "fadeIn 300ms 750ms both" }}>
+        Signaling server is <span style={{ color: "yellow" }}>warming</span> up.{" "}
+        <br />
+        <small style={{ fontSize: "0.5em" }}>
+          This while take a while <br /> (free tier hosting)
+        </small>
+      </Banger>
+    );
+  }
+  if (socketStatus === "failed") {
+    return (
+      <Banger>
+        Signaling server connection <span style={{ color: "red" }}>failed</span>{" "}
+      </Banger>
+    );
+  }
   return (
     <GameSettingsProvider>
       <Game

@@ -71,3 +71,12 @@ input[type="text"]:focus {
 a {
   color: inherit;
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to{
+    opacity: 1;
+  }
+}
