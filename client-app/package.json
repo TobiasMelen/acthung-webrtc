@@ -12,7 +12,7 @@
   "dependencies": {
     "esbuild-runner": "^2.2.2",
     "preact": "^10.13.2",
-    "vite": "^2.3.3"
+    "vite": "^4.2.1"
   },
   "devDependencies": {
     "@prefresh/vite": "^2.2.9",
