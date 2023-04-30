@@ -39,7 +39,7 @@ export default function Lobby({ lobbyName }: { lobbyName: string }) {
         Signaling server is <span style={{ color: "yellow" }}>warming</span> up.{" "}
         <br />
         <small style={{ fontSize: "0.5em" }}>
-          This while take a while <br /> (free tier hosting)
+          This will take a while <br /> (free tier hosting)
         </small>
       </Banger>
     );
