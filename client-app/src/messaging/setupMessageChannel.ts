@@ -19,16 +19,15 @@ type EventHooks<TExtraSendParams extends any[] = []> = {
   bindReceive(receive: (input: string) => void): (() => void) | void;
 };
 
-type ConverterType<
-  TConverter extends Converter<any>
-> = TConverter extends Converter<infer Result> ? Result : never;
+type ConverterType<TConverter extends Converter<any>> =
+  TConverter extends Converter<infer Result> ? Result : never;
 
 export type MessageChannel<
   TSend extends ConverterCollection,
   TReceive extends ConverterCollection,
   TExtraSendParams extends any[] = []
 > = {
-  send<TMessage extends keyof TSend>(
+  send<TMessage extends Extract<keyof TSend, string>>(
     type: TMessage,
     data: ConverterType<TSend[TMessage]>,
     ...extraParams: TExtraSendParams

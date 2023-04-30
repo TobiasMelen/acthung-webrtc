@@ -12,13 +12,13 @@
   "dependencies": {
     "esbuild-runner": "^2.2.2",
     "preact": "^10.13.2",
-    "vite": "^4.2.1"
+    "vite": "^4.3.3"
   },
   "devDependencies": {
     "@prefresh/vite": "^2.2.9",
-    "@types/node": "^18.15.11",
-    "@types/react": "^18.0.33",
-    "@types/react-dom": "^18.0.11"
+    "@types/node": "^18.16.3",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.1"
   },
   "prettier": {
     "lineWidth": 90

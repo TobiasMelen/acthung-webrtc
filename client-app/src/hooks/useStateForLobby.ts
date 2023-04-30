@@ -40,7 +40,7 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
   const [playerStates, setPlayerState] = useState<PlayerStates>({});
   const [gameState, setGameState] = useState<GameState>({
     colorAvailability: getColorAvailability(),
-    allowSinglePlayer: false,
+    allowSinglePlayer: true,
   });
 
   //Create players from connections
