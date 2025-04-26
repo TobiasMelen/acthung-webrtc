@@ -7,6 +7,7 @@ import Layout from "./Layout";
 import Waiting from "./Waiting";
 import { GameSettingsProvider } from "./GameSettingsContext";
 import Scoreboard from "./Scoreboard";
+import useEffectWithDeps from "../hooks/useEffectWithDeps";
 
 type PlayerInfo = Pick<LobbyPlayer, "color" | "name">;
 
@@ -169,32 +170,29 @@ export function Game({
     }
   }, [playersInGame]);
 
-  //When someone crashes, set state to that player as crashed and give everyone else a score.
-  const onSnakeDeath = (player: LobbyPlayer) => {
-    if (playersInGame == null) {
-      return;
-    }
-    player.setState("dead");
-    playersInGame.alive
-      .filter((p) => p.id !== player.id)
-      .forEach((otherPlayer) => otherPlayer.setScore(otherPlayer.score + 1));
-  };
-
   //Create new input for game when players changes.
   const gameInput = useMemo(
     () =>
-      gameState.type === "playing"
-        ? players
-            .filter((player) => gameState.joinedPlayerIds.includes(player.id))
-            .map((player) => ({
-              id: player.id,
-              color: player.color,
-              onCollision: () => onSnakeDeath(player),
-              onTurnInput: player.onTurnInput,
-            }))
+      gameState.type === "playing" && playersInGame
+        ? (console.log("Remaking gameInput"),
+          playersInGame.alive.map((player, _, alive) => ({
+            id: player.id,
+            color: player.color,
+            onTurnInput: player.onTurnInput,
+            onCollision: () => {
+              player.setState("dead");
+            },
+          })))
         : [],
-    [gameState.type, players]
+    [gameState.type, playersInGame]
   );
+
+  useEffectWithDeps(prevDeps => {
+    const previousAlive = prevDeps?.[0];
+    if(previousAlive && playersInGame?.alive && previousAlive.length > playersInGame.alive.length){
+      playersInGame.alive.forEach(p => p.setScore(p.score + 1));
+    }
+  }, [playersInGame?.alive]);
 
   const url = `${window.location.protocol}//${window.location.host}${window.location.pathname}#${lobbyName}`;
   switch (gameState.type) {
