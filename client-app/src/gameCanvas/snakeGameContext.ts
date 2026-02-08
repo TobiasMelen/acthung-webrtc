@@ -24,8 +24,10 @@ export default function snakeGameContext(
     lineWidth = 8,
     turnRadius = 0.05,
     startPositionSpread = 0.5,
-    startingHoleChancePercantage = -5,
-    holeDuration = 10,
+    startingHoleChancePercantage = -3,
+    holeChanceIncrement = 0.04,
+    holeDuration = 14,
+    holeDurationVariance = 10,
     maxVerticalResolution = 1080,
     checkCollisions = true,
     useTrackingCollisionCanvas = false,
@@ -87,10 +89,11 @@ export default function snakeGameContext(
     }
     if (snake.currentHoleSection == 0) {
       if (snake.holeChance > 0 && Math.random() * 100 < snake.holeChance) {
-        snake.currentHoleSection = holeDuration;
+        snake.currentHoleSection =
+          holeDuration + Math.floor(Math.random() * holeDurationVariance);
         snake.holeChance = startingHoleChancePercantage;
       } else {
-        snake.holeChance = snake.holeChance + 0.1;
+        snake.holeChance = snake.holeChance + holeChanceIncrement;
       }
     }
 
