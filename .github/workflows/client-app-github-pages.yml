@@ -6,9 +6,21 @@ on:
     paths:
       - .github/**
       - client-app/**
+
+permissions:
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,9 +37,11 @@ jobs:
           yarn test || exit 1
           yarn build --base /${{ github.event.repository.name }}/
 
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          token: ${{ secrets.GH_DEPLOYMENT_TOKEN }}
-          branch: gh-pages
-          folder: client-app/dist
+          path: client-app/dist
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
