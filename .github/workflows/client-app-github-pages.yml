@@ -35,7 +35,7 @@ jobs:
           cd client-app
           yarn --prod
           yarn test || exit 1
-          yarn build --base /${{ github.event.repository.name }}/
+          yarn build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
