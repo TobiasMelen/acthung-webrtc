@@ -8,6 +8,7 @@ import Waiting from "./Waiting";
 import { GameSettingsProvider } from "./GameSettingsContext";
 import Scoreboard from "./Scoreboard";
 import useEffectWithDeps from "../hooks/useEffectWithDeps";
+import useWakeLock from "../hooks/useWakeLock";
 
 type PlayerInfo = Pick<LobbyPlayer, "color" | "name">;
 
@@ -34,6 +35,7 @@ const createIntermission = (
 export default function Lobby({ lobbyName }: { lobbyName: string }) {
   const [socketStatus, connections] = useLobbyConnection(lobbyName);
   const [players, gameState] = useStateForLobby(connections);
+  useWakeLock();
   if (socketStatus === "connecting") {
     return (
       <Banger style={{ animation: "fadeIn 300ms 750ms both" }}>
