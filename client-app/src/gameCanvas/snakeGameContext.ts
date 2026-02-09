@@ -27,8 +27,8 @@ export default function snakeGameContext(
     startingHoleChancePercantage = -3,
     holeChanceVariance = 4,
     holeChanceIncrement = 0.04,
-    holeDuration = 12,
-    holeDurationVariance = 16,
+    holeDuration = 10,
+    holeDurationVariance = 10,
     maxVerticalResolution = 1080,
     checkCollisions = true,
     useTrackingCollisionCanvas = false,
@@ -77,6 +77,24 @@ export default function snakeGameContext(
       snake!.turn = turn;
     };
   };
+
+  function drawTriangle(snake: typeof snakes[0], size = lineWidth) {
+    const { x, y } = snake.position;
+    const angle = snake.direction;
+    context.beginPath();
+    context.moveTo(x + size * Math.cos(angle), y + size * Math.sin(angle));
+    context.lineTo(
+      x + size * Math.cos(angle + 2.4),
+      y + size * Math.sin(angle + 2.4)
+    );
+    context.lineTo(
+      x + size * Math.cos(angle - 2.4),
+      y + size * Math.sin(angle - 2.4)
+    );
+    context.closePath();
+    context.fillStyle = snake.color;
+    context.fill();
+  }
 
   //function for colliding and drawing snake
   function moveSnake(
@@ -193,11 +211,52 @@ export default function snakeGameContext(
       return collisionCanvasWorker;
     })();
 
-  let stopped = true;
-  function run() {
+  let activeAbort: AbortController | null = null;
+
+  function clearCanvas() {
+    context.clearRect(0, 0, canvas.width / scaleFactor, canvas.height / scaleFactor);
+  }
+
+  function showStartSequence(signal: AbortSignal) {
+    const staggerInterval = 1000;
+    const blinkToggle = staggerInterval / 3;
+    const totalDuration = snakes.length * staggerInterval;
+    const startTime = performance.now();
+
+    return new Promise<void>((resolve) => {
+      function frame(now: number) {
+        if (signal.aborted) return resolve();
+        const elapsed = now - startTime;
+
+        if (elapsed >= totalDuration) {
+          clearCanvas();
+          return resolve();
+        }
+
+        clearCanvas();
+        const activeIndex = Math.floor(elapsed / staggerInterval);
+
+        for (let i = 0; i < activeIndex; i++) {
+          drawTriangle(snakes[i]);
+        }
+
+        const timeInWindow = elapsed - activeIndex * staggerInterval;
+        const blinkOn = Math.floor(timeInWindow / blinkToggle) % 2 === 0;
+        if (blinkOn) {
+          drawTriangle(snakes[activeIndex]);
+        }
+
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  function startGameLoop(signal: AbortSignal) {
     let timeStamp = performance.now();
     let collisionCheckOdd = false;
     function drawFrame(now: number) {
+      if (signal.aborted) return;
       const frameTimeActual = now - timeStamp;
       let frameTimeOffset = frameTimeActual / frameTimeSixtyFps;
       //Don't skip too far if we're lagging.
@@ -214,9 +273,8 @@ export default function snakeGameContext(
         );
       }
       collisionCheckOdd = !collisionCheckOdd;
-      
+
       for (const tracker of trackers) {
-        //do not create redundant position data objects
         let positionData = null;
         if (now - tracker.latestReport >= tracker.interval) {
           positionData ??= snakes
@@ -230,15 +288,22 @@ export default function snakeGameContext(
           tracker.channel.send("positionData", positionData);
         }
       }
-      !stopped && requestAnimationFrame(drawFrame);
-    }
-    if (stopped) {
-      stopped = false;
       requestAnimationFrame(drawFrame);
     }
+    requestAnimationFrame(drawFrame);
   }
+
+  async function run() {
+    stop();
+    const abort = new AbortController();
+    activeAbort = abort;
+    await showStartSequence(abort.signal);
+    if (!abort.signal.aborted) startGameLoop(abort.signal);
+  }
+
   function stop() {
-    stopped = true;
+    activeAbort?.abort();
+    activeAbort = null;
   }
 
   return {

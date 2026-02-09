@@ -7,7 +7,7 @@ import Banger from "./Banger";
 import useConnectionForPlayer from "../hooks/useConnectionForPlayer";
 import useStateForPlayer from "../hooks/useStateForPlayer";
 import { match } from "../utility";
-import wilhelm from "../../assets/wilhelm.aac";
+import wilhelmUrl from "../../assets/wilhelm.aac";
 
 type Props = {
   lobbyName: string;
@@ -15,24 +15,46 @@ type Props = {
 
 type ClientPlayer = ReturnType<typeof useStateForPlayer>[0];
 
-// https://stackoverflow.com/a/54119854 ???
-const AudioContext =
-  window.AudioContext ||
+const audioCtx = new (window.AudioContext ||
   //@ts-ignore
-  window.webkitAudioContext;
-const audioCtx = new AudioContext();
-const deathscream = new Audio(wilhelm);
-deathscream.load();
+  window.webkitAudioContext)();
+
+// Decode audio and find where sound actually starts (skip leading silence)
+const audioBufferPromise = fetch(wilhelmUrl)
+  .then((res) => res.arrayBuffer())
+  .then((buf) => audioCtx.decodeAudioData(buf))
+  .then((decoded) => {
+    const data = decoded.getChannelData(0);
+    const threshold = 0.01;
+    let startOffset = 0;
+    for (let i = 0; i < data.length; i++) {
+      if (Math.abs(data[i]) > threshold) {
+        startOffset = i / decoded.sampleRate;
+        break;
+      }
+    }
+    return { buffer: decoded, startOffset };
+  });
+
+function playDeathScream() {
+  audioCtx.resume().then(() => audioBufferPromise).then(({ buffer, startOffset }) => {
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = 1 + Math.random() * 0.5;
+    source.detune.value = (Math.random() - 0.5) * 800;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.3;
+    source.connect(gain).connect(audioCtx.destination);
+    source.start(0, startOffset);
+  });
+}
 
 export default function Client({ lobbyName = "new" }: Props) {
   const [channel, connectionStatus] = useConnectionForPlayer({ lobbyName });
   const [player, gameState] = useStateForPlayer(channel);
   useEffect(() => {
     if (player?.state === "dead") {
-      deathscream.muted = false;
-      deathscream.volume = 0.3;
-      deathscream.playbackRate = 2 * Math.random() + 0.5;
-      deathscream.play();
+      playDeathScream();
     }
   }, [player?.state]);
   const renderCore = useCallback(() => {
@@ -63,8 +85,7 @@ export default function Client({ lobbyName = "new" }: Props) {
             {...player}
             colors={gameState?.colorAvailability}
             onSubmit={() => {
-              deathscream.muted = true;
-              deathscream.play();
+              audioCtx.resume();
             }}
           />
         );
