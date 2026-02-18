@@ -23,6 +23,7 @@ export const ALL_COLORS = [
 ];
 
 export const DEFAULT_RTC_PEER_CONFIG: RTCConfiguration = {
+  iceCandidatePoolSize: 2,
   iceServers: [
     { urls: ["stun:stun.l.google.com:19302"] },
     ...(import.meta.env.VITE_TURN_USERNAME && import.meta.env.VITE_TURN_CREDENTIAL
