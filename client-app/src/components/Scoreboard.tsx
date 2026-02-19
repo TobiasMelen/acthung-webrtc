@@ -2,6 +2,7 @@ import React from "react";
 import { ALL_COLORS } from "../constants";
 import { LobbyPlayer } from "../hooks/useStateForLobby";
 import QrCode from "./QrCode";
+import VerticalCounter from "./VerticalCounter";
 
 export default function Scoreboard({
   players,
@@ -41,7 +42,37 @@ export default function Scoreboard({
               paddingBottom: "2em",
             }}
           >
-            <div style={{ fontSize: "5.2em" }}>{player.score}</div>
+            <div
+              style={{
+                fontSize: "5.2em",
+                display: "flex",
+                gap: "0.225em",
+                justifyContent: "flex-end",
+                alignItems: "stretch",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column-reverse",
+                  gap: "0.075em",
+                  padding: "0.175em 0",
+                  justifyContent: "flex-start",
+                }}
+              >
+                {new Array(player.holePasses || 0).fill(
+                  <div
+                    style={{
+                      borderRadius: "100%",
+                      backgroundColor: player.color,
+                      padding: "0.075em",
+                      animation: 'growIn 500ms both cubic-bezier(0,0,0,2)'
+                    }}
+                  />,
+                )}
+              </div>
+              <VerticalCounter number={player.score} />
+            </div>
             <div style={{ fontSize: "1.2em", whiteSpace: "nowrap" }}>
               {player.name}
             </div>

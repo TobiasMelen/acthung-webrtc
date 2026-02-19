@@ -6,8 +6,10 @@ import Button from "./Button";
 import Banger from "./Banger";
 import useConnectionForPlayer from "../hooks/useConnectionForPlayer";
 import useStateForPlayer from "../hooks/useStateForPlayer";
+import useEffectWithDeps from "../hooks/useEffectWithDeps";
 import { match } from "../utility";
-import wilhelmUrl from "../../assets/wilhelm.aac";
+import { playDeath, playBop, playKaching } from "../playerSoundEffects";
+import { hapticSingle, hapticDouble, hapticTriple } from "../playerHaptics";
 
 type Props = {
   lobbyName: string;
@@ -15,48 +17,46 @@ type Props = {
 
 type ClientPlayer = ReturnType<typeof useStateForPlayer>[0];
 
-const audioCtx = new (window.AudioContext ||
-  //@ts-ignore
-  window.webkitAudioContext)();
-
-// Decode audio and find where sound actually starts (skip leading silence)
-const audioBufferPromise = fetch(wilhelmUrl)
-  .then((res) => res.arrayBuffer())
-  .then((buf) => audioCtx.decodeAudioData(buf))
-  .then((decoded) => {
-    const data = decoded.getChannelData(0);
-    const threshold = 0.01;
-    let startOffset = 0;
-    for (let i = 0; i < data.length; i++) {
-      if (Math.abs(data[i]) > threshold) {
-        startOffset = i / decoded.sampleRate;
-        break;
-      }
-    }
-    return { buffer: decoded, startOffset };
-  });
-
-function playDeathScream() {
-  audioCtx.resume().then(() => audioBufferPromise).then(({ buffer, startOffset }) => {
-    const source = audioCtx.createBufferSource();
-    source.buffer = buffer;
-    source.playbackRate.value = 1 + Math.random() * 0.5;
-    source.detune.value = (Math.random() - 0.5) * 800;
-    const gain = audioCtx.createGain();
-    gain.gain.value = 0.3;
-    source.connect(gain).connect(audioCtx.destination);
-    source.start(0, startOffset);
-  });
-}
-
 export default function Client({ lobbyName = "new" }: Props) {
   const [channel, connectionStatus] = useConnectionForPlayer({ lobbyName });
   const [player, gameState] = useStateForPlayer(channel);
   useEffect(() => {
     if (player?.state === "dead") {
-      playDeathScream();
+      playDeath();
+      hapticTriple();
     }
   }, [player?.state]);
+
+  useEffectWithDeps(
+    (prevDeps) => {
+      const prevHolePasses = prevDeps?.[0];
+      if (
+        prevHolePasses != null &&
+        player?.holePasses != null &&
+        player.holePasses > prevHolePasses
+      ) {
+        playBop();
+        hapticSingle();
+      }
+    },
+    [player?.holePasses],
+  );
+
+  useEffectWithDeps(
+    (prevDeps) => {
+      const prevScore = prevDeps?.[0];
+      if (
+        prevScore != null &&
+        player?.score != null &&
+        player.score > prevScore
+      ) {
+        playKaching();
+        hapticDouble();
+      }
+    },
+    [player?.score],
+  );
+
   const renderCore = useCallback(() => {
     if (player == null || channel == null) {
       return (
@@ -84,9 +84,7 @@ export default function Client({ lobbyName = "new" }: Props) {
           <EnterCreds
             {...player}
             colors={gameState?.colorAvailability}
-            onSubmit={() => {
-              audioCtx.resume();
-            }}
+            onSubmit={() => {}}
           />
         );
       case "playing":
@@ -123,7 +121,7 @@ function EnterCreds({
       setHasInput(true);
       props.setName(ev.target.value);
     },
-    [props.setName]
+    [props.setName],
   );
   const inputRef = useRef<HTMLInputElement>(null);
   return (
@@ -152,7 +150,9 @@ function EnterCreds({
           return (
             <figure
               key={color}
-              onClick={() => available && props.setColor(color)}
+              onClick={() =>
+                available && (props.setColor(color), hapticSingle())
+              }
               style={{
                 boxSizing: "border-box",
                 width: 50,
@@ -184,6 +184,7 @@ function EnterCreds({
           onClick={() => {
             props.onSubmit?.();
             props.setReady(true);
+            hapticDouble();
           }}
         >
           Ready!

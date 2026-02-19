@@ -11,6 +11,7 @@ export type SnakeInput = {
   id: string;
   color: string;
   onCollision: () => void;
+  onHolePass: () => void;
 };
 
 const frameTimeSixtyFps = 1000 / 60;
@@ -27,8 +28,8 @@ export default function snakeGameContext(
     startingHoleChancePercantage = -3,
     holeChanceVariance = 4,
     holeChanceIncrement = 0.02,
-    holeDuration = 20,
-    holeDurationVariance = 10,
+    holeDuration = 5,
+    holeDurationVariance = 20,
     maxVerticalResolution = 1080,
     checkCollisions = true,
     useTrackingCollisionCanvas = false,
@@ -62,6 +63,7 @@ export default function snakeGameContext(
     },
     currentHoleSection: 0,
     erasePos: null as null | { x: number; y: number },
+    holePassCooldown: 0,
   });
 
   const snakes: (ReturnType<typeof createNewSnake> & SnakeInput)[] = [];
@@ -101,12 +103,13 @@ export default function snakeGameContext(
     snake: typeof snakes[0],
     snakeSpeed: number,
     turnAngle: number,
+    frameTimeOffset: number,
     checkCollision = false
   ) {
     if (snake.hasCollided) {
       return;
     }
-    if (snake.currentHoleSection == 0) {
+    if (snake.currentHoleSection <= 0) {
       if (snake.holeChance > 0 && Math.random() * 100 < snake.holeChance) {
         snake.currentHoleSection =
           holeDuration + Math.floor(Math.random() * holeDurationVariance);
@@ -117,43 +120,65 @@ export default function snakeGameContext(
       }
     }
 
-    const willCollide =
-      checkCollision &&
-      (snake.position.x < 0 ||
+    if (snake.holePassCooldown > 0) {
+      snake.holePassCooldown--;
+    }
+
+    let willCollide = false;
+    let isHolePass = false;
+
+    if (checkCollision) {
+      if (
+        snake.position.x < 0 ||
         snake.position.x > canvas.width ||
         snake.position.y < 0 ||
-        snake.position.y > canvas.height ||
-        context.getImageData(
+        snake.position.y > canvas.height
+      ) {
+        willCollide = true;
+      } else {
+        const pixelData = context.getImageData(
           snake.position.x +
             (snakeSpeed + lineWidth / 2) * Math.cos(snake.direction),
           snake.position.y +
             (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
           1,
           1
-        ).data[3] !== 0);
+        ).data;
+        if (pixelData[3] !== 0) {
+          if (pixelData[0] < 10 && pixelData[1] < 10 && pixelData[2] < 10) {
+            isHolePass = true;
+          } else {
+            willCollide = true;
+          }
+        }
+      }
+    }
 
     if (willCollide) {
       snake.hasCollided = true;
       snake.onCollision();
     }
 
+    if (isHolePass && snake.holePassCooldown <= 0) {
+      snake.holePassCooldown = 30;
+      snake.onHolePass();
+    }
+
     if (snake.erasePos != null) {
       context.beginPath();
       context.lineCap = "square";
       context.lineWidth = lineWidth + 3;
-      const prevCompOp = context.globalCompositeOperation;
-      context.globalCompositeOperation = "destination-out";
+      context.strokeStyle = "#000000";
       context.moveTo(snake.erasePos.x, snake.erasePos.y);
       context.lineTo(snake.position.x, snake.position.y);
       context.stroke();
       context.closePath();
       snake.erasePos = null;
-      context.globalCompositeOperation = prevCompOp;
     }
 
     if (snake.currentHoleSection > 0) {
       snake.erasePos = { ...snake.position };
-      snake.currentHoleSection--;
+      snake.currentHoleSection -= frameTimeOffset;
     }
 
     context.beginPath();
@@ -269,6 +294,7 @@ export default function snakeGameContext(
           snakes[index],
           frameTimeSnakeSpeed,
           frameTimeTurnRadius,
+          frameTimeOffset,
           checkCollisions && !!(index % 2) === collisionCheckOdd
         );
       }

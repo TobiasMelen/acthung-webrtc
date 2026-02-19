@@ -14,6 +14,8 @@ type PlayerStates = { [id: string]: LobbyPlayer };
 type PlayerFunctions = {
   setState(state: PlayerState["state"]): void;
   setScore(score: number): void;
+  addHolePass(): void;
+  resetHolePasses(): void;
   onTurnInput(callBack: (turn: number) => void): void;
 };
 
@@ -21,10 +23,13 @@ export type LobbyPlayer = PlayerState &
   PlayerFunctions & { id: string; timeout?: number };
 
 const getColorAvailability = (assignedColors: string[] = []) =>
-  ALL_COLORS.reduce((acc, color) => {
-    acc[color] = assignedColors.indexOf(color) === -1;
-    return acc;
-  }, {} as { [color: string]: boolean });
+  ALL_COLORS.reduce(
+    (acc, color) => {
+      acc[color] = assignedColors.indexOf(color) === -1;
+      return acc;
+    },
+    {} as { [color: string]: boolean },
+  );
 
 /*
  * The Lobby component is responsible for converting webrtc channels into player objects with state and client messaging.
@@ -60,9 +65,9 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
                 () =>
                   setPlayerState(
                     ({ [disconnectId]: _removePlayer, ...playerStates }) =>
-                      playerStates
+                      playerStates,
                   ),
-                2000
+                2000,
               ),
             };
           })
@@ -72,7 +77,7 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
           }, {} as PlayerStates);
 
         //if we get new players, we should update colors.
-        let updatedColorAvailability: typeof gameState["colorAvailability"];
+        let updatedColorAvailability: (typeof gameState)["colorAvailability"];
         let queuespot = 1;
         const connectedPlayers = connectionKeys.reduce(
           (acc, connKey, index) => {
@@ -87,7 +92,7 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
                 };
                 //Create new player if color can be assigned.
                 const assignedColor = Object.entries(
-                  updatedColorAvailability
+                  updatedColorAvailability,
                 ).find(([_color, avail]) => avail)?.[0];
                 if (assignedColor != null) {
                   updatedColorAvailability[assignedColor] = false;
@@ -97,6 +102,7 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
                     color: assignedColor,
                     ready: false,
                     score: 0,
+                    holePasses: 0,
                     state: "joining",
                     latency: 0,
                     //By saving the functions here they will be in data communicated through datachannel.
@@ -105,6 +111,13 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
                       modifyPlayer((player) => ({ ...player, state })),
                     setScore: (score: number) =>
                       modifyPlayer((player) => ({ ...player, score })),
+                    addHolePass: () =>
+                      modifyPlayer((player) => ({
+                        ...player,
+                        holePasses: player.holePasses + 1,
+                      })),
+                    resetHolePasses: () =>
+                      modifyPlayer((player) => ({ ...player, holePasses: 0 })),
                     onTurnInput: (turner) =>
                       clientConnections[connKey]?.on("turn", turner),
                   } as LobbyPlayer;
@@ -128,10 +141,10 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
               const bindMessageToStateKey = <TModel>(
                 eventName: MessageTypesToLobby,
                 modifier: (cb: (input: TModel) => any) => void,
-                keyName: keyof TModel
+                keyName: keyof TModel,
               ) => {
                 currentConnection.on(eventName, (data) =>
-                  modifier((old) => ({ ...old, [keyName]: data }))
+                  modifier((old) => ({ ...old, [keyName]: data })),
                 );
               };
               bindMessageToStateKey("setColor", modifyPlayer, "color");
@@ -140,7 +153,7 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
               bindMessageToStateKey(
                 "allowSinglePlayer",
                 setGameState,
-                "allowSinglePlayer"
+                "allowSinglePlayer",
               );
               playerState = {
                 ...playerState,
@@ -150,17 +163,17 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
             acc[connKey] = playerState;
             return acc;
           },
-          {} as typeof playerStates
+          {} as typeof playerStates,
         );
         return { ...disconnectingPlayers, ...connectedPlayers };
       });
     },
-    [clientConnections] as const
+    [clientConnections] as const,
   );
 
   //Update gamestate colors from player-updates
   const assignedColors = Object.values(playerStates).map(
-    (player) => player.color
+    (player) => player.color,
   );
   useEffect(() => {
     setGameState((gameState) => ({
@@ -187,12 +200,12 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
         else if (newState !== oldState) {
           clientConnections[key]?.send(
             "playerState",
-            extractObjectDiff(oldState, newState, "function")
+            extractObjectDiff(oldState, newState, "function"),
           );
         }
       });
     },
-    [clientConnections, playerStates] as const
+    [clientConnections, playerStates] as const,
   );
 
   //Report gamestate to clients
@@ -214,7 +227,7 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
         }
       });
     },
-    [clientConnections, gameState] as const
+    [clientConnections, gameState] as const,
   );
 
   const players = useMemo(() => Object.values(playerStates), [playerStates]);

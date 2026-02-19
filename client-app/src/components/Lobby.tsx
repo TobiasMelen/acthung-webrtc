@@ -9,6 +9,7 @@ import { GameSettingsProvider } from "./GameSettingsContext";
 import Scoreboard from "./Scoreboard";
 import useEffectWithDeps from "../hooks/useEffectWithDeps";
 import useWakeLock from "../hooks/useWakeLock";
+import VerticalCounter from "./VerticalCounter";
 
 type PlayerInfo = Pick<LobbyPlayer, "color" | "name">;
 
@@ -103,6 +104,7 @@ export function Game({
           .filter((player) => player.ready)
           .map((player) => {
             player.setState("playing");
+            player.resetHolePasses();
             return player.id;
           }),
       });
@@ -184,6 +186,7 @@ export function Game({
             onCollision: () => {
               player.setState("dead");
             },
+            onHolePass: player.addHolePass
           })))
         : [],
     [gameState.type, playersInGame]
@@ -195,6 +198,17 @@ export function Game({
       playersInGame.alive.forEach(p => p.setScore(p.score + 1));
     }
   }, [playersInGame?.alive]);
+
+  //Convert 4 hole passes into 1 point
+  useEffect(() => {
+    if (!playersInGame) return;
+    for (const player of playersInGame.alive) {
+      if (player.holePasses >= 4) {
+        player.setScore(player.score + 1);
+        player.resetHolePasses();
+      }
+    }
+  }, [playersInGame]);
 
   const url = `${window.location.protocol}//${window.location.host}${window.location.pathname}#${lobbyName}`;
   switch (gameState.type) {
@@ -222,7 +236,7 @@ export function Game({
           <Banger key="countdown">
             {gameState.roundWinner ? "Next round" : "Game starts"} in{" "}
             <span style={{ width: "1em", display: "inline-block" }}>
-              {gameState.remainingTime}
+              <VerticalCounter number={gameState.remainingTime} />
             </span>
           </Banger>
         ) : gameState.roundWinner ? (

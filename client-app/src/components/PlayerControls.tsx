@@ -9,6 +9,7 @@ import Triangle, { TriangleDirection } from "./Triangle";
 import useMediaMatch from "../hooks/useMediaMatch";
 import Layout from "./Layout";
 
+
 type Props = PropsWithChildren<{
   latency?: number;
   color: CSSProperties["color"];

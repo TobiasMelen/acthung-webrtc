@@ -2,6 +2,7 @@ type PlayerState = {
   name: string;
   color: string;
   score: number;
+  holePasses: number;
   ready: boolean;
   state: "joining" | "playing" | "dead";
   latency: number;
@@ -33,6 +34,10 @@ declare module "*?worker" {
   export default workerImport;
 }
 declare module "*.aac" {
+  const value: string;
+  export default value;
+}
+declare module "*.mp3" {
   const value: string;
   export default value;
 }

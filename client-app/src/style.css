@@ -6,20 +6,50 @@
     opacity: 1;
   }
 }
-@keyframes fromRight {
-  from {
-    transform: translateX(30%);
-  }
-  to {
-    transform: translateX(0%);
-  }
-}
+
 @keyframes flexGrow {
   from {
     flex-grow: 0.00001;
   }
   to {
     flex-grow: 1;
+  }
+}
+
+@keyframes growIn {
+  from {
+    scale: 0;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+@keyframes fromRight {
+  from {
+    transform: translateX(50%);
+  }
+  to {
+    transform: translateX(0%);
+  }
+}
+
+@keyframes fromBottom {
+  from {
+    transform: translateY(50%);
+  }
+  to {
+    transform: translateY(0%);
+  }
+}
+
+
+@keyframes fromTop {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0%);
   }
 }
 
