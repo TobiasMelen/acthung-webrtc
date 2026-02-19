@@ -5,7 +5,7 @@ on:
       - master
     paths:
       - .github/**
-      - client-app/**
+      - client-app/**/*
 
 permissions:
   pages: write
