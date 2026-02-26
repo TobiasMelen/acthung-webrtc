@@ -14,6 +14,7 @@ const defaultSettings = {
   startingHoleChancePercantage: -5,
   holeDuration: 10,
   maxVerticalResolution: 1080,
+  holePassesNeeded: 6,
 };
 
 export type GameSettings = typeof defaultSettings;

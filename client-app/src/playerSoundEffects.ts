@@ -1,6 +1,7 @@
 import slapUrl from "../assets/slap.mp3";
 import bopUrl from "../assets/bop.mp3";
 import kachingUrl from "../assets/kaching.mp3";
+import wilhelmUrl from "../assets/wilhelm.aac";
 
 type SoundEffect = { buffer: AudioBuffer; startOffset: number };
 
@@ -9,6 +10,7 @@ const rawBuffers = {
   slap: fetch(slapUrl).then((res) => res.arrayBuffer()),
   bop: fetch(bopUrl).then((res) => res.arrayBuffer()),
   kaching: fetch(kachingUrl).then((res) => res.arrayBuffer()),
+  wilhelm: fetch(wilhelmUrl).then((res) => res.arrayBuffer()),
 };
 
 let audioCtx: AudioContext;
@@ -48,6 +50,9 @@ function initAudio() {
     kaching: rawBuffers.kaching
       .then((buf) => audioCtx.decodeAudioData(buf))
       .then(trimLeadingSilence),
+    wilhelm: rawBuffers.wilhelm
+      .then((buf) => audioCtx.decodeAudioData(buf))
+      .then(trimLeadingSilence),
   };
 }
 
@@ -75,7 +80,8 @@ function playSound(name: keyof typeof rawBuffers, volume = 0.3) {
 }
 
 export function playDeath() {
-  playSound("slap", 0.3);
+  const useWilhelm = Math.random() < 0.15;
+  playSound(useWilhelm ? "wilhelm" : "slap", 0.3);
 }
 
 export function playBop() {

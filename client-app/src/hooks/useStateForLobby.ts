@@ -230,7 +230,10 @@ export default function useStateForLobby(clientConnections: PlayerConnections) {
     [clientConnections, gameState] as const,
   );
 
-  const players = useMemo(() => Object.values(playerStates), [playerStates]);
+  const players = useMemo(
+    () => Object.values(playerStates).sort((a, b) => b.score - a.score),
+    [playerStates]
+  );
 
   return [players, gameState] as const;
 }

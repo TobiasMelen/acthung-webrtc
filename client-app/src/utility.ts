@@ -45,3 +45,11 @@ export function match<TMatch extends keyof any, TResult>(
 ){
   return output[value];
 }
+
+export function runInViewTransition(callback: () => void) {
+  if ('startViewTransition' in document) {
+    (document as any).startViewTransition(callback);
+  } else {
+    callback();
+  }
+}
