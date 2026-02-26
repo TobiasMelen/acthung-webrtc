@@ -37,7 +37,7 @@ export default function Lobby({ lobbyName }: { lobbyName: string }) {
   const [socketStatus, connections] = useLobbyConnection(lobbyName);
   const [players, gameState] = useStateForLobby(connections);
   useWakeLock();
-  if (socketStatus === "connecting") {
+  if (socketStatus === "connecting" && players.length === 0) {
     return (
       <Banger style={{ animation: "fadeIn 300ms 750ms both" }}>
         Signaling server is <span style={{ color: "yellow" }}>warming</span> up.{" "}
