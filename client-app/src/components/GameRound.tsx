@@ -1,12 +1,19 @@
 import React, { useRef, useEffect, CSSProperties, useState } from "react";
-import snakeGameContext, { SnakeInput } from "../gameCanvas/snakeGameContext";
+import snakeGameContext from "../gameCanvas/snakeGameContext";
+import { LobbyPlayer } from "../hooks/useStateForLobby";
+import { wait } from "../utility";
+
+type PlayerInfo = { name: string; color: string };
+
+type RoundResult =
+  | { type: "multiplayer"; roundWinner?: PlayerInfo; gameWinner?: PlayerInfo }
+  | { type: "singleplayer"; score: number; name: string; color: string };
 
 type Props = {
-  run: boolean;
-  input: (SnakeInput & {
-    onTurnInput(callBack: (turn: number) => void): void;
-  })[];
-  children?: React.ReactNode;
+  players: LobbyPlayer[];
+  isSinglePlayer: boolean;
+  winningScore: number;
+  onRoundEnd: (result: RoundResult) => void;
 };
 
 const canvasStyle: CSSProperties = {
@@ -14,41 +21,126 @@ const canvasStyle: CSSProperties = {
   height: "100%",
   width: "100%",
 };
-export default function GameRound({ run, input, children }: Props) {
+
+type CanvasContext = Awaited<ReturnType<typeof createSnakeCanvas>>;
+
+export default function GameRound({
+  players,
+  isSinglePlayer,
+  winningScore,
+  onRoundEnd,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [canvas, setCanvas] = useState<
-    PromiseResult<ReturnType<typeof createSnakeCanvas>>
-  >();
 
   useEffect(() => {
-    if (canvasRef.current == null || canvas) {
-      return () =>
-        setCanvas((canvas) => {
-          canvas?.destroy();
-          return undefined;
+    const canvasEl = canvasRef.current;
+    if (!canvasEl || players.length === 0) return;
+
+    // Local game state - avoids stale closure issues
+    const alive = new Set(players.map((p) => p.id));
+    const scores = new Map(players.map((p) => [p.id, isSinglePlayer ? 0 : p.score]));
+    const holePasses = new Map(players.map((p) => [p.id, 0]));
+    let roundEnded = false;
+    let ctx: CanvasContext | undefined;
+
+    const syncScore = (id: string) => {
+      const player = players.find((p) => p.id === id);
+      player?.setScore(scores.get(id) ?? 0);
+    };
+
+    const handleHolePass = (id: string) => {
+      const threshold = isSinglePlayer ? 1 : 4;
+      const passes = (holePasses.get(id) ?? 0) + 1;
+      if (passes >= threshold) {
+        scores.set(id, (scores.get(id) ?? 0) + 1);
+        holePasses.set(id, 0);
+        syncScore(id);
+        players.find((p) => p.id === id)?.resetHolePasses();
+      } else {
+        holePasses.set(id, passes);
+        players.find((p) => p.id === id)?.addHolePass();
+      }
+    };
+
+    const handleDeath = (id: string) => {
+      if (roundEnded) return;
+
+      const player = players.find((p) => p.id === id);
+      player?.setState("dead");
+      alive.delete(id);
+
+      // Award points to survivors (multiplayer)
+      if (!isSinglePlayer) {
+        for (const aliveId of alive) {
+          scores.set(aliveId, (scores.get(aliveId) ?? 0) + 1);
+          syncScore(aliveId);
+        }
+      }
+
+      const shouldEnd = isSinglePlayer ? alive.size === 0 : alive.size <= 1;
+      if (shouldEnd) {
+        roundEnded = true;
+        ctx?.stop();
+        setTimeout(() => {
+          if (isSinglePlayer && player) {
+            onRoundEnd({
+              type: "singleplayer",
+              score: scores.get(id) ?? 0,
+              name: player.name,
+              color: player.color,
+            });
+          } else {
+            const winnerId = [...alive][0];
+            const winner = players.find((p) => p.id === winnerId);
+            const roundWinner = winner ?? { name: "Nobody", color: "inherit" };
+
+            let maxScore = 0;
+            let maxPlayer: LobbyPlayer | null = null;
+            for (const p of players) {
+              const s = scores.get(p.id) ?? 0;
+              if (s > maxScore) {
+                maxScore = s;
+                maxPlayer = p;
+              }
+            }
+            const gameWinner = maxScore >= winningScore ? maxPlayer : null;
+
+            onRoundEnd({
+              type: "multiplayer",
+              roundWinner,
+              gameWinner: gameWinner ?? undefined,
+            });
+          }
+        }, 1000);
+      }
+    };
+
+    // Defer until after layout so canvas has dimensions
+    requestAnimationFrame(async () => {
+      const canvas = await createSnakeCanvas(canvasEl);
+      ctx = canvas;
+
+      for (const player of players) {
+        player.setState("playing");
+        player.resetHolePasses();
+        if (isSinglePlayer) player.setScore(0);
+
+        const turner = canvas.inputSnakeData({
+          id: player.id,
+          color: player.color,
+          onCollision: () => handleDeath(player.id),
+          onHolePass: () => handleHolePass(player.id),
         });
-    }
-    createSnakeCanvas(canvasRef.current).then((canvas) => {
-      setCanvas(canvas);
+        player.onTurnInput(turner);
+      }
+      await wait(100);
+      canvas.run();
     });
-  }, [canvasRef.current]);
 
-  useEffect(() => {
-    if (canvas == null) {
-      return;
-    }
-    for (const snakeInput of input) {
-      const turner = canvas.inputSnakeData(snakeInput);
-      snakeInput.onTurnInput(turner);
-    }
-  }, [canvas, input]);
-
-  useEffect(() => {
-    if (canvas == null) {
-      return;
-    }
-    run ? canvas.run() : canvas.stop();
-  }, [canvas, run]);
+    return () => {
+      ctx?.destroy();
+    };
+  }, []);
 
   return <canvas ref={canvasRef} style={canvasStyle} />;
 }
@@ -60,9 +152,8 @@ async function createSnakeCanvas(
     ...contextOptions
   }: { maxVerticalResolution?: number } & Parameters<
     typeof snakeGameContext
-  >[1] = {}
+  >[1] = {},
 ) {
-  //Create scaled canvas for rendering
   canvas.style.height = "100%";
   canvas.style.width = "100%";
   if (canvas.clientHeight > maxVerticalResolution) {
@@ -74,16 +165,11 @@ async function createSnakeCanvas(
     canvas.width = canvas.clientWidth;
   }
 
-  //If possibly to create gamecontext offscreen, in seperate web-worker, do so. Otherwise initialize it directly.
-  const gameContext = await ("OffscreenCanvas" in window && false
-    ? //Load offscreen script lazily to delay worker instantion until necessary
-      (await import("../gameCanvas/offscreenGame")).default
-    : snakeGameContext)(canvas, contextOptions);
+  const gameContext = await (
+    "OffscreenCanvas" in window && false
+      ? (await import("../gameCanvas/offscreenGame")).default
+      : snakeGameContext
+  )(canvas, contextOptions);
 
-  return {
-    ...gameContext,
-    destroy() {
-      gameContext.destroy();
-    },
-  };
+  return gameContext;
 }

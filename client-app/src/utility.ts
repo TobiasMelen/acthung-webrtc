@@ -1,5 +1,5 @@
 export const typedEntries = Object.entries as <T, TKey extends keyof T>(
-  o: T
+  o: T,
 ) => [Extract<TKey, string>, T[TKey]][];
 
 export const typedKeys = Object.keys as <T>(o: T) => (keyof T)[];
@@ -32,7 +32,7 @@ export function uuidV4() {
     result +=
       (step * 51) & 52
         ? (step ^ 15 ? 8 ^ (Math.random() * (step ^ 20 ? 16 : 4)) : 4).toString(
-            16
+            16,
           )
         : "-"
   );
@@ -41,15 +41,19 @@ export function uuidV4() {
 
 export function match<TMatch extends keyof any, TResult>(
   value: TMatch,
-  output: Record<TMatch, TResult>
-){
+  output: Record<TMatch, TResult>,
+) {
   return output[value];
 }
 
 export function runInViewTransition(callback: () => void) {
-  if ('startViewTransition' in document) {
+  if ("startViewTransition" in document) {
     (document as any).startViewTransition(callback);
   } else {
     callback();
   }
+}
+
+export function wait(ms: number) {
+  return new Promise((res) => setTimeout(res, ms));
 }

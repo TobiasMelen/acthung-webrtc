@@ -80,7 +80,7 @@ function playSound(name: keyof typeof rawBuffers, volume = 0.3) {
 }
 
 export function playDeath() {
-  const useWilhelm = Math.random() < 0.15;
+  const useWilhelm = Math.random() < 0.075;
   playSound(useWilhelm ? "wilhelm" : "slap", 0.3);
 }
 

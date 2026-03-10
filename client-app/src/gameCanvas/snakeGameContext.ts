@@ -27,13 +27,13 @@ export default function snakeGameContext(
     startPositionSpread = 0.5,
     startingHoleChancePercantage = -3,
     holeChanceVariance = 4,
-    holeChanceIncrement = 0.02,
+    holeChanceIncrement = 0.04,
     holeDuration = 5,
     holeDurationVariance = 20,
     maxVerticalResolution = 1080,
     checkCollisions = true,
     useTrackingCollisionCanvas = false,
-  } = {}
+  } = {},
 ) {
   const context =
     (canvas.getContext("2d", {
@@ -52,7 +52,8 @@ export default function snakeGameContext(
     hasCollided: false,
     turn: 0,
     direction: Math.round(Math.random() * 360),
-    holeChance: startingHoleChancePercantage + Math.random() * holeChanceVariance,
+    holeChance:
+      startingHoleChancePercantage + Math.random() * holeChanceVariance,
     position: {
       x:
         (Math.random() + startPositionSpread) *
@@ -80,18 +81,18 @@ export default function snakeGameContext(
     };
   };
 
-  function drawTriangle(snake: typeof snakes[0], size = lineWidth) {
+  function drawTriangle(snake: (typeof snakes)[0], size = lineWidth) {
     const { x, y } = snake.position;
     const angle = snake.direction;
     context.beginPath();
     context.moveTo(x + size * Math.cos(angle), y + size * Math.sin(angle));
     context.lineTo(
       x + size * Math.cos(angle + 2.4),
-      y + size * Math.sin(angle + 2.4)
+      y + size * Math.sin(angle + 2.4),
     );
     context.lineTo(
       x + size * Math.cos(angle - 2.4),
-      y + size * Math.sin(angle - 2.4)
+      y + size * Math.sin(angle - 2.4),
     );
     context.closePath();
     context.fillStyle = snake.color;
@@ -100,11 +101,11 @@ export default function snakeGameContext(
 
   //function for colliding and drawing snake
   function moveSnake(
-    snake: typeof snakes[0],
+    snake: (typeof snakes)[0],
     snakeSpeed: number,
     turnAngle: number,
     frameTimeOffset: number,
-    checkCollision = false
+    checkCollision = false,
   ) {
     if (snake.hasCollided) {
       return;
@@ -112,16 +113,16 @@ export default function snakeGameContext(
     if (snake.currentHoleSection <= 0) {
       if (snake.holeChance > 0 && Math.random() * 100 < snake.holeChance) {
         snake.currentHoleSection =
-          holeDuration + Math.floor(Math.random() * holeDurationVariance);
+          holeDuration + Math.floor(Math.random() * (holeDurationVariance * frameTimeOffset));
         snake.holeChance =
-          startingHoleChancePercantage + Math.random() * holeChanceVariance;
+          startingHoleChancePercantage + Math.random() * (holeChanceVariance * frameTimeOffset);
       } else {
         snake.holeChance = snake.holeChance + holeChanceIncrement;
       }
     }
 
     if (snake.holePassCooldown > 0) {
-      snake.holePassCooldown--;
+      snake.holePassCooldown -= frameTimeOffset;
     }
 
     let willCollide = false;
@@ -142,7 +143,7 @@ export default function snakeGameContext(
           snake.position.y +
             (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
           1,
-          1
+          1,
         ).data;
         if (pixelData[3] !== 0) {
           if (pixelData[0] < 10 && pixelData[1] < 10 && pixelData[2] < 10) {
@@ -160,7 +161,7 @@ export default function snakeGameContext(
     }
 
     if (isHolePass && snake.holePassCooldown <= 0) {
-      snake.holePassCooldown = 30;
+      snake.holePassCooldown = 10;
       snake.onHolePass();
     }
 
@@ -204,7 +205,7 @@ export default function snakeGameContext(
     channel: TrackerMessageChannel,
     interval: number,
     //Collision reporting needs to be guarded from this side to disable hacking attempts.
-    reportsCollisions: boolean
+    reportsCollisions: boolean,
   ) {
     channel.send("canvasInfo", {
       width: canvas.width,
@@ -230,7 +231,7 @@ export default function snakeGameContext(
       const collisionCanvasWorker = new CollisionTrackerWorker();
       collisionCanvasWorker.postMessage("SELF_HOST_CANVAS");
       const collisionTracker = createWebWorkerMessageChannel(
-        collisionCanvasWorker
+        collisionCanvasWorker,
       )(messagesToTracker, messagesFromTracker);
       addTrackingChannel(collisionTracker, 50, true);
       return collisionCanvasWorker;
@@ -239,36 +240,54 @@ export default function snakeGameContext(
   let activeAbort: AbortController | null = null;
 
   function clearCanvas() {
-    context.clearRect(0, 0, canvas.width / scaleFactor, canvas.height / scaleFactor);
+    context.clearRect(
+      0,
+      0,
+      canvas.width / scaleFactor,
+      canvas.height / scaleFactor,
+    );
   }
 
   function showStartSequence(signal: AbortSignal) {
+    if (snakes.length === 0) return Promise.resolve();
+
     const staggerInterval = 1000;
     const blinkToggle = staggerInterval / 3;
-    const totalDuration = snakes.length * staggerInterval;
-    const startTime = performance.now();
+    let startTime: number | null = null;
 
     return new Promise<void>((resolve) => {
       function frame(now: number) {
         if (signal.aborted) return resolve();
+
+        // Initialize start time on first frame to avoid negative elapsed
+        if (startTime === null) startTime = now;
         const elapsed = now - startTime;
 
-        if (elapsed >= totalDuration) {
+        clearCanvas();
+
+        let allVisible = true;
+        for (let i = 0; i < snakes.length; i++) {
+          const snake = snakes[i];
+          const snakeStartTime = i * staggerInterval;
+          const timeSinceStart = elapsed - snakeStartTime;
+
+          if (timeSinceStart < 0) {
+            // Not yet time for this snake
+            allVisible = false;
+          } else if (timeSinceStart < staggerInterval) {
+            // Blinking phase
+            allVisible = false;
+            const blinkOn = Math.floor(timeSinceStart / blinkToggle) % 2 === 0;
+            if (blinkOn) drawTriangle(snake);
+          } else {
+            // Fully visible
+            drawTriangle(snake);
+          }
+        }
+
+        if (allVisible) {
           clearCanvas();
           return resolve();
-        }
-
-        clearCanvas();
-        const activeIndex = Math.floor(elapsed / staggerInterval);
-
-        for (let i = 0; i < activeIndex; i++) {
-          drawTriangle(snakes[i]);
-        }
-
-        const timeInWindow = elapsed - activeIndex * staggerInterval;
-        const blinkOn = Math.floor(timeInWindow / blinkToggle) % 2 === 0;
-        if (blinkOn) {
-          drawTriangle(snakes[activeIndex]);
         }
 
         requestAnimationFrame(frame);
@@ -295,7 +314,7 @@ export default function snakeGameContext(
           frameTimeSnakeSpeed,
           frameTimeTurnRadius,
           frameTimeOffset,
-          checkCollisions && !!(index % 2) === collisionCheckOdd
+          checkCollisions && !!(index % 2) === collisionCheckOdd,
         );
       }
       collisionCheckOdd = !collisionCheckOdd;
@@ -319,12 +338,15 @@ export default function snakeGameContext(
     requestAnimationFrame(drawFrame);
   }
 
-  async function run() {
+  function run() {
     stop();
     const abort = new AbortController();
     activeAbort = abort;
-    await showStartSequence(abort.signal);
-    if (!abort.signal.aborted) startGameLoop(abort.signal);
+    showStartSequence(abort.signal).then(() => {
+      if (!abort.signal.aborted) {
+        startGameLoop(abort.signal);
+      }
+    });
   }
 
   function stop() {

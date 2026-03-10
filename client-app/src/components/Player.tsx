@@ -96,7 +96,19 @@ export default function Client({ lobbyName = "new" }: Props) {
           />
         );
       case "dead":
-        return <Banger>You crashed</Banger>;
+        return (
+          <Banger>
+            {player.score > 0 ? (
+              <>
+                You got{" "}
+                <span style={{ color: player.color }}>{player.score}</span>{" "}
+                {player.score === 1 ? "point" : "points"}!
+              </>
+            ) : (
+              "You crashed"
+            )}
+          </Banger>
+        );
     }
   }, [player, gameState, connectionStatus]);
   return (
