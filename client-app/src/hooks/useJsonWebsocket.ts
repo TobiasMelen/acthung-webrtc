@@ -51,13 +51,17 @@ export default function useJsonWebsocket(url?: string, reconnectAttempts = 5) {
             },
           }
         : null,
-    [socket]
+    [socket],
   );
-  return jsonSocket == null
-    ? {
-        status: failedAllRetries
-          ? ("failed" as const)
-          : ("connecting" as const),
-      }
-    : { status: "connected" as const, ...jsonSocket };
+  return useMemo(
+    () =>
+      jsonSocket == null
+        ? {
+            status: failedAllRetries
+              ? ("failed" as const)
+              : ("connecting" as const),
+          }
+        : { status: "connected" as const, ...jsonSocket },
+    [jsonSocket, failedAllRetries],
+  );
 }

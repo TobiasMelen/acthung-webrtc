@@ -35,13 +35,13 @@ type GameState =
       singlePlayerNewBest?: boolean;
       singlePlayerLeaderboard?: LeaderboardEntry[];
     }
-  | { type: "playing"; joinedPlayers: LobbyPlayer[] };
+  | { type: "playing"; joinedPlayerIds: string[] };
 
 type GameAction =
   | { type: "PLAYERS_READY" }
   | { type: "PLAYERS_LEFT" }
   | { type: "COUNTDOWN_TICK" }
-  | { type: "START_ROUND"; joinedPlayers: LobbyPlayer[] }
+  | { type: "START_ROUND"; joinedPlayerIds: string[] }
   | { type: "ROUND_ENDED"; roundWinner?: PlayerInfo; gameWinner?: PlayerInfo }
   | {
       type: "SINGLE_PLAYER_ROUND_ENDED";
@@ -71,7 +71,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "START_ROUND":
       if (state.type === "intermission") {
-        return { type: "playing", joinedPlayers: action.joinedPlayers };
+        return { type: "playing", joinedPlayerIds: action.joinedPlayerIds };
       }
       return state;
 
@@ -169,8 +169,8 @@ export function Game({
     const timeout = setTimeout(() => {
       if (gameState.remainingTime === 1) {
         // Time's up - start round with ready players
-        const joinedPlayers = players.filter((player) => player.ready);
-        dispatch({ type: "START_ROUND", joinedPlayers });
+        const joinedPlayerIds = players.filter((p) => p.ready).map((p) => p.id);
+        dispatch({ type: "START_ROUND", joinedPlayerIds });
       } else {
         dispatch({ type: "COUNTDOWN_TICK" });
       }
@@ -246,12 +246,15 @@ export function Game({
       return <Waiting players={players} url={url} />;
     }
     case "playing": {
+      const joinedPlayers = players.filter((p) =>
+        gameState.joinedPlayerIds.includes(p.id)
+      );
       const isSinglePlayer =
-        gameState.joinedPlayers.length === 1 && allowSinglePlayer;
+        joinedPlayers.length === 1 && allowSinglePlayer;
       return (
         <Layout>
           <GameRound
-            players={gameState.joinedPlayers}
+            players={joinedPlayers}
             isSinglePlayer={isSinglePlayer}
             winningScore={winningScore}
             onRoundEnd={handleRoundEnd}

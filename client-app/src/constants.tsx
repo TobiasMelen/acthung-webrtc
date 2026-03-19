@@ -1,10 +1,4 @@
-export const SIGNALING_URL =
-  import.meta.env.VITE_SIGNAL_URL ??
-  (() => {
-    throw new Error(
-      "VITE_SIGNAL_URL for signaling server must be specified in env."
-    );
-  })();
+export const SIGNALING_URL: string | undefined = import.meta.env.VITE_SIGNAL_URL;
 
 export const DEFAULT_COLOR = "white";
 

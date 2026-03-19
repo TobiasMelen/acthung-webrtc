@@ -22,6 +22,8 @@ const canvasStyle: CSSProperties = {
   width: "100%",
 };
 
+type Turners = Record<string, (turn: number) => void>;
+
 type CanvasContext = Awaited<ReturnType<typeof createSnakeCanvas>>;
 
 export default function GameRound({
@@ -31,6 +33,18 @@ export default function GameRound({
   onRoundEnd,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [turners, setTurners] = useState<Turners>({});
+
+  // Bind turners to players - runs on mount and when players reconnect
+  useEffect(() => {
+    console.log("rebinding turners");
+    for (const player of players) {
+      const turner = turners[player.id];
+      if (turner) {
+        player.onTurnInput(turner);
+      }
+    }
+  }, [players, turners]);
 
   useEffect(() => {
     const canvasEl = canvasRef.current;
@@ -38,7 +52,9 @@ export default function GameRound({
 
     // Local game state - avoids stale closure issues
     const alive = new Set(players.map((p) => p.id));
-    const scores = new Map(players.map((p) => [p.id, isSinglePlayer ? 0 : p.score]));
+    const scores = new Map(
+      players.map((p) => [p.id, isSinglePlayer ? 0 : p.score]),
+    );
     const holePasses = new Map(players.map((p) => [p.id, 0]));
     let roundEnded = false;
     let ctx: CanvasContext | undefined;
@@ -115,12 +131,10 @@ export default function GameRound({
       }
     };
 
-    // Defer until after layout so canvas has dimensions
-    requestAnimationFrame(async () => {
-      const canvas = await createSnakeCanvas(canvasEl);
+    createSnakeCanvas(canvasEl).then((canvas) => {
       ctx = canvas;
 
-      for (const player of players) {
+      const turners = players.reduce((turners, player) => {
         player.setState("playing");
         player.resetHolePasses();
         if (isSinglePlayer) player.setScore(0);
@@ -131,10 +145,13 @@ export default function GameRound({
           onCollision: () => handleDeath(player.id),
           onHolePass: () => handleHolePass(player.id),
         });
-        player.onTurnInput(turner);
-      }
-      await wait(100);
-      canvas.run();
+        turners[player.id] = turner;
+        return turners;
+      }, {} as Turners);
+
+      setTurners(turners);
+
+      wait(100).then(() => canvas.run());
     });
 
     return () => {

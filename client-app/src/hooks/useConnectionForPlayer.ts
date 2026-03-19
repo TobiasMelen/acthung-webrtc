@@ -3,8 +3,8 @@ import {
   MessageChannelToLobby,
   createMessageChannelToLobby,
 } from "../messaging/dataChannelMessaging";
-import { DEFAULT_RTC_PEER_CONFIG, SIGNALING_URL } from "../constants";
-import useJsonWebsocket from "./useJsonWebsocket";
+import { DEFAULT_RTC_PEER_CONFIG } from "../constants";
+import useSignaling from "./useSignaling";
 import { uuidV4 } from "../utility";
 
 type Props = {
@@ -33,9 +33,7 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
   );
 
   //only keep ws connection before webrtc is established
-  const socket = useJsonWebsocket(
-    lobbyMessageChannel == null ? `${SIGNALING_URL}/${playerId}` : undefined
-  );
+  const socket = useSignaling(lobbyName, playerId, lobbyMessageChannel == null);
 
   useEffect(() => {
     if (lobbyMessageChannel != null || socket.status != "connected") {
@@ -52,15 +50,29 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
       setLobbyMessageChannel(handles);
     };
 
+    // Track if offer has been sent (for non-trickle ICE)
+    let offerSent = false;
+
     peerConnection.onicecandidate = (event) => {
-      if (event.candidate != null) {
-        socket.send({
-          to: lobbyName,
-          from: playerId,
-          data: event.candidate.toJSON(),
-        });
+      if (socket.supportsTrickleIce) {
+        // Send ICE candidates incrementally
+        if (event.candidate != null) {
+          socket.send({
+            to: lobbyName,
+            from: playerId,
+            data: event.candidate.toJSON(),
+          });
+        }
+      } else {
+        // null candidate means ICE gathering is complete
+        if (event.candidate === null && !offerSent) {
+          offerSent = true;
+          socket.send({ data: peerConnection.localDescription?.toJSON(), to: lobbyName, from: playerId });
+          startNoLobbyTimeout();
+        }
       }
     };
+
     peerConnection.oniceconnectionstatechange = () => {
       const disconnect = () => {
         setLobbyMessageChannel((channel) => {
@@ -78,24 +90,33 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
       }
     };
     let timeout: number;
-    socket.addListener(async ({ data }) => {
-      clearTimeout(timeout);
-      if (data.type === "answer") {
-        await peerConnection.setRemoteDescription(data);
-      } else if ("candidate" in data) {
-        await peerConnection.addIceCandidate(data);
-      }
-    });
-    peerConnection.createOffer().then(async (offer) => {
+    const startNoLobbyTimeout = () => {
       timeout = window.setTimeout(() => {
         setConnectionStatus((connectionStatus) =>
           connectionStatus !== "ERROR" ? "NO_LOBBY" : "ERROR"
         );
-      }, 1000);
-      await peerConnection.setLocalDescription(offer);
-      socket.send({ data: offer, to: lobbyName, from: playerId });
+      }, 5000);
+    };
+
+    socket.addListener(async ({ data }) => {
+      clearTimeout(timeout);
+      if (data.type === "answer") {
+        await peerConnection.setRemoteDescription(data);
+      } else if ("candidate" in data && socket.supportsTrickleIce) {
+        await peerConnection.addIceCandidate(data);
+      }
     });
-  }, [lobbyMessageChannel, lobbyName, socket]);
+    peerConnection.createOffer().then(async (offer) => {
+      await peerConnection.setLocalDescription(offer);
+
+      if (socket.supportsTrickleIce) {
+        // Send offer immediately, ICE candidates will follow
+        socket.send({ data: offer, to: lobbyName, from: playerId });
+        startNoLobbyTimeout();
+      }
+      // For non-trickle ICE, the offer is sent from onicecandidate when candidate is null
+    });
+  }, [lobbyMessageChannel, lobbyName, playerId, socket]);
 
   return [lobbyMessageChannel, connectionStatus] as const;
 }
