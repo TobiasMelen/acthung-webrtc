@@ -11,7 +11,7 @@ import useWakeLock from "../hooks/useWakeLock";
 import VerticalCounter from "./VerticalCounter";
 import useOnlineState from "../hooks/useOnlineState";
 import Leaderboard from "./Leaderboard";
-import useLocalStorage from "../hooks/useLocalStorage";
+import useJsonBin from "../hooks/useJsonBin";
 
 type PlayerInfo = Pick<LobbyPlayer, "color" | "name">;
 
@@ -150,9 +150,10 @@ export function Game({
 }) {
   const [gameState, dispatch] = useReducer(gameReducer, { type: "lobby" });
 
-  const [leaderboard, setLeaderboard] = useLocalStorage<LeaderboardEntry[]>(
+  const [leaderboard, setLeaderboard] = useJsonBin<LeaderboardEntry[]>(
     `leaderboard-snake`,
     [],
+    import.meta.env.VITE_LEADERBOARD_JSON_BUCKET,
   );
 
   const winningScore = useMemo(
@@ -194,7 +195,7 @@ export function Game({
     }
   }, [players, gameState.type, allowSinglePlayer]);
 
-  const handleRoundEnd = (
+  const handleRoundEnd = async (
     result:
       | {
           type: "multiplayer";
@@ -210,25 +211,30 @@ export function Game({
         color: result.color,
         timestamp: Date.now(),
       };
-      const previousEntry = leaderboard.find(
-        (entry) => entry.name === result.name && entry.color === result.color,
-      );
-      const updatedLeaderboard =
-        newEntry.score > (previousEntry?.score ?? -1)
+
+      let updatedLeaderboard: LeaderboardEntry[] = [];
+      let isNewBest = false;
+
+      await setLeaderboard((prev) => {
+        const previousEntry = prev.find(
+          (entry) => entry.name === result.name && entry.color === result.color,
+        );
+        isNewBest = newEntry.score > (previousEntry?.score ?? -1);
+        updatedLeaderboard = isNewBest
           ? [
-              ...leaderboard.filter((entry) => entry !== previousEntry),
+              ...prev.filter((entry) => entry !== previousEntry),
               newEntry,
             ].sort((a, b) => b.score - a.score)
-          : leaderboard;
-
-      setLeaderboard(updatedLeaderboard);
+          : prev;
+        return updatedLeaderboard;
+      });
 
       dispatch({
         type: "SINGLE_PLAYER_ROUND_ENDED",
         score: result.score,
         name: result.name,
         color: result.color,
-        newBest: updatedLeaderboard !== leaderboard,
+        newBest: isNewBest,
         leaderboard: updatedLeaderboard.slice(0, 3),
       });
     } else {
