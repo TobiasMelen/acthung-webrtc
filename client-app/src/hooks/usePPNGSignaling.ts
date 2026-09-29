@@ -30,7 +30,7 @@ async function postMessage(room: string, message: any) {
  * @param room - The room/channel to join
  * @param myId - The identifier to listen as (messages with `to: myId` will be delivered)
  * @param enabled - Set to false to disable connection (default: true)
- * @param reconnectAttempts - Number of retry attempts before failing (default: 5)
+ * @param reconnectAttempts - Consecutive failures before reporting "failed", retrying continues (default: 5)
  */
 export default function usePPNGSignaling(
   room: string | null,
@@ -41,45 +41,35 @@ export default function usePPNGSignaling(
   const [status, setStatus] = useState<"connecting" | "connected" | "failed">(
     "connecting",
   );
-  const [retries, setRetries] = useState(0);
   const listenersRef = useRef<Set<(data: any) => void>>(new Set());
-  const abortControllerRef = useRef<AbortController | null>(null);
   const messageQueueRef = useRef<any[]>([]);
-
-  // Reset on room/id change
-  useEffect(() => {
-    setRetries(0);
-    setStatus("connecting");
-    abortControllerRef.current?.abort();
-    messageQueueRef.current = [];
-  }, [room, myId, enabled]);
 
   // Long-poll for messages
   useEffect(() => {
-    if (!enabled || !room || !myId || retries > reconnectAttempts) {
-      if (retries > reconnectAttempts) {
-        setStatus("failed");
-      }
+    setStatus("connecting");
+    messageQueueRef.current = [];
+    if (!enabled || !room || !myId) {
       return;
     }
 
-    let mounted = true;
     const abortController = new AbortController();
-    abortControllerRef.current = abortController;
 
-    // Mark as connected immediately - ppng.io is stateless
-    setStatus("connected");
-
-    // Flush queued messages
-    const queue = messageQueueRef.current;
-    messageQueueRef.current = [];
-    queue.forEach((msg) => postMessage(room, msg));
+    // ppng.io is stateless, so any successful request means we're connected.
+    const markConnected = () => {
+      setStatus("connected");
+      const queue = messageQueueRef.current;
+      messageQueueRef.current = [];
+      queue.forEach((msg) => postMessage(room, msg));
+    };
+    markConnected();
 
     const myChannel = `${room}/${myId}`;
     const url = `${PPNG_BASE}/${encodeURIComponent(myChannel)}`;
 
     const poll = async () => {
-      while (mounted && !abortController.signal.aborted) {
+      //Lobbies can idle for hours, so only consecutive failures count and we never stop retrying.
+      let failures = 0;
+      while (!abortController.signal.aborted) {
         try {
           const response = await fetch(url, {
             signal: abortController.signal,
@@ -87,6 +77,10 @@ export default function usePPNGSignaling(
 
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
+          }
+          if (failures > 0) {
+            failures = 0;
+            markConnected();
           }
 
           const text = await response.text();
@@ -104,26 +98,25 @@ export default function usePPNGSignaling(
               // Ignore parse errors
             }
           }
-        } catch (err: any) {
-          if (err.name === "AbortError") {
+        } catch {
+          if (abortController.signal.aborted) {
             break;
           }
-          // Connection error, retry after delay
-          if (mounted) {
-            setRetries((r) => r + 1);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+          failures++;
+          if (failures > reconnectAttempts) {
+            setStatus("failed");
           }
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.min(1000 * 2 ** (failures - 1), 30000)),
+          );
         }
       }
     };
 
     poll();
 
-    return () => {
-      mounted = false;
-      abortController.abort();
-    };
-  }, [enabled, room, myId, retries, reconnectAttempts]);
+    return () => abortController.abort();
+  }, [enabled, room, myId, reconnectAttempts]);
 
   const send = useCallback(
     (message: any) => {
@@ -152,12 +145,8 @@ export default function usePPNGSignaling(
       return { status: "connecting" as const };
     }
 
-    if (retries > reconnectAttempts) {
-      return { status: "failed" as const };
-    }
-
     if (status !== "connected") {
-      return { status: "connecting" as const };
+      return { status };
     }
 
     return {
@@ -165,5 +154,5 @@ export default function usePPNGSignaling(
       send,
       addListener,
     };
-  }, [enabled, room, retries, reconnectAttempts, status, send, addListener]);
+  }, [enabled, room, status, send, addListener]);
 }

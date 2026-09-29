@@ -119,11 +119,13 @@ export default function Lobby({ lobbyName }: { lobbyName: string }) {
       </Banger>
     );
   }
-  if (socketStatus === "failed") {
+  if (socketStatus === "failed" && players.length === 0) {
     return (
       <Banger>
         Signaling server connection{" "}
-        <span style={{ color: "red" }}>failed</span>{" "}
+        <span style={{ color: "red" }}>failed</span>
+        <br />
+        <small style={{ fontSize: "0.5em" }}>Retrying...</small>
       </Banger>
     );
   }
