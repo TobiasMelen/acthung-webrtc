@@ -5,6 +5,12 @@ import {
   TrackerMessageChannel,
 } from "../collisionCanvas/collisionCanvasMessaging";
 import CollisionTrackerWorker from "../collisionCanvas/collisionCanvas?worker";
+import CollisionGridWorker from "../collisionGrid/collisionGridWorker?worker";
+import {
+  messagesFromCollisionGrid,
+  messagesToCollisionGrid,
+} from "../collisionGrid/collisionGridMessaging";
+import type { SnakeFrame } from "../collisionGrid/collisionGrid";
 import { createWebWorkerMessageChannel } from "../messaging/webWorkerMessageChannel";
 
 export type SnakeInput = {
@@ -35,12 +41,13 @@ export default function snakeGameContext(
     useTrackingCollisionCanvas = false,
   } = {},
 ) {
+  //Never read pixels back from this context, it would force the GPU canvas into slow readbacks.
   const context =
     (canvas.getContext("2d", {
       desynchronized: true,
-      willReadFrequently: true,
     }) as OffscreenCanvasRenderingContext2D) ??
     inlineThrow("Could not get Snake canvas 2d context");
+  const holeLineWidth = lineWidth + 3;
   const scaleFactor =
     canvas.height > maxVerticalResolution
       ? canvas.height / maxVerticalResolution
@@ -99,14 +106,28 @@ export default function snakeGameContext(
     context.fill();
   }
 
-  //function for colliding and drawing snake
+  function collide(snake: (typeof snakes)[0]) {
+    if (!snake.hasCollided) {
+      snake.hasCollided = true;
+      snake.onCollision();
+    }
+  }
+
+  function passHole(snake: (typeof snakes)[0]) {
+    if (!snake.hasCollided && snake.holePassCooldown <= 0) {
+      snake.holePassCooldown = 10;
+      snake.onHolePass();
+    }
+  }
+
+  //Draws the snake's next step and returns what was drawn for the collision grid.
   function moveSnake(
     snake: (typeof snakes)[0],
+    index: number,
     snakeSpeed: number,
     turnAngle: number,
     frameTimeOffset: number,
-    checkCollision = false,
-  ) {
+  ): SnakeFrame | undefined {
     if (snake.hasCollided) {
       return;
     }
@@ -125,50 +146,30 @@ export default function snakeGameContext(
       snake.holePassCooldown -= frameTimeOffset;
     }
 
-    let willCollide = false;
-    let isHolePass = false;
-
-    if (checkCollision) {
-      if (
-        snake.position.x < 0 ||
+    if (
+      checkCollisions &&
+      (snake.position.x < 0 ||
         snake.position.x > canvas.width ||
         snake.position.y < 0 ||
-        snake.position.y > canvas.height
-      ) {
-        willCollide = true;
-      } else {
-        const pixelData = context.getImageData(
-          snake.position.x +
-            (snakeSpeed + lineWidth / 2) * Math.cos(snake.direction),
-          snake.position.y +
-            (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
-          1,
-          1,
-        ).data;
-        if (pixelData[3] !== 0) {
-          if (pixelData[0] < 10 && pixelData[1] < 10 && pixelData[2] < 10) {
-            isHolePass = true;
-          } else {
-            willCollide = true;
-          }
-        }
-      }
+        snake.position.y > canvas.height)
+    ) {
+      collide(snake);
     }
 
-    if (willCollide) {
-      snake.hasCollided = true;
-      snake.onCollision();
-    }
-
-    if (isHolePass && snake.holePassCooldown <= 0) {
-      snake.holePassCooldown = 10;
-      snake.onHolePass();
-    }
+    const { x, y } = snake.position;
+    const probe: SnakeFrame["probe"] = [
+      x + (snakeSpeed + lineWidth / 2) * Math.cos(snake.direction),
+      y + (snakeSpeed + lineWidth / 2) * Math.sin(snake.direction),
+    ];
+    const erase: SnakeFrame["erase"] =
+      snake.erasePos != null
+        ? [snake.erasePos.x, snake.erasePos.y, x, y]
+        : undefined;
 
     if (snake.erasePos != null) {
       context.beginPath();
       context.lineCap = "square";
-      context.lineWidth = lineWidth + 3;
+      context.lineWidth = holeLineWidth;
       context.strokeStyle = "#000000";
       context.moveTo(snake.erasePos.x, snake.erasePos.y);
       context.lineTo(snake.position.x, snake.position.y);
@@ -193,6 +194,13 @@ export default function snakeGameContext(
     context.lineTo(snake.position.x, snake.position.y);
     context.stroke();
     context.closePath();
+
+    return {
+      index,
+      probe,
+      erase,
+      line: [x, y, snake.position.x, snake.position.y],
+    };
   }
 
   //Setup tracker canvases
@@ -218,10 +226,33 @@ export default function snakeGameContext(
       channel.on("reportCollision", (id) => {
         const snake = snakes.find((snake) => snake.id === id);
         if (snake) {
-          snake.hasCollided = true;
-          snake.onCollision();
+          collide(snake);
         }
       });
+  }
+
+  //Spawned per round so every round starts with an empty grid.
+  function startCollisionGrid() {
+    const worker = new CollisionGridWorker();
+    const channel = createWebWorkerMessageChannel(worker)(
+      messagesToCollisionGrid,
+      messagesFromCollisionGrid,
+    );
+    channel.send("init", {
+      width: canvas.width / scaleFactor,
+      height: canvas.height / scaleFactor,
+      lineWidth,
+      holeLineWidth,
+    });
+    channel.on("collision", (index) => snakes[index] && collide(snakes[index]));
+    channel.on("holePass", (index) => snakes[index] && passHole(snakes[index]));
+    return {
+      sendFrame: (frame: SnakeFrame[]) => channel.send("frame", frame),
+      terminate() {
+        channel.destroy();
+        worker.terminate();
+      },
+    };
   }
 
   //Create collision canvas
@@ -296,9 +327,11 @@ export default function snakeGameContext(
     });
   }
 
-  function startGameLoop(signal: AbortSignal) {
+  function startGameLoop(
+    signal: AbortSignal,
+    collisionGrid: ReturnType<typeof startCollisionGrid> | null,
+  ) {
     let timeStamp = performance.now();
-    let collisionCheckOdd = false;
     function drawFrame(now: number) {
       if (signal.aborted) return;
       const frameTimeActual = now - timeStamp;
@@ -308,16 +341,18 @@ export default function snakeGameContext(
       const frameTimeSnakeSpeed = snakeSpeed * frameTimeOffset;
       const frameTimeTurnRadius = turnRadius * frameTimeOffset;
       timeStamp = now;
+      const collisionFrame: SnakeFrame[] = [];
       for (let index = 0; index < snakes.length; index++) {
-        moveSnake(
+        const snakeFrame = moveSnake(
           snakes[index],
+          index,
           frameTimeSnakeSpeed,
           frameTimeTurnRadius,
           frameTimeOffset,
-          checkCollisions && !!(index % 2) === collisionCheckOdd,
         );
+        snakeFrame && collisionFrame.push(snakeFrame);
       }
-      collisionCheckOdd = !collisionCheckOdd;
+      collisionGrid?.sendFrame(collisionFrame);
 
       for (const tracker of trackers) {
         let positionData = null;
@@ -342,9 +377,11 @@ export default function snakeGameContext(
     stop();
     const abort = new AbortController();
     activeAbort = abort;
+    const collisionGrid = checkCollisions ? startCollisionGrid() : null;
+    abort.signal.addEventListener("abort", () => collisionGrid?.terminate());
     showStartSequence(abort.signal).then(() => {
       if (!abort.signal.aborted) {
-        startGameLoop(abort.signal);
+        startGameLoop(abort.signal, collisionGrid);
       }
     });
   }
