@@ -106,18 +106,3 @@ export default function setupMessageChannel<
     };
   };
 }
-
-/**Create a passthrough bridge between two sets of channelhooks */
-export function bridgeChannelHooks(
-  channelHooks1: EventHooks,
-  channelHooks2: EventHooks
-) {
-  const unbind1 = channelHooks1.bindReceive(channelHooks2.send);
-  const unbind2 = channelHooks2.bindReceive(channelHooks1.send);
-  return {
-    destroy() {
-      unbind1 && unbind1();
-      unbind2 && unbind2();
-    },
-  };
-}

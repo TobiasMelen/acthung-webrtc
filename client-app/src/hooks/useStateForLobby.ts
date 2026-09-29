@@ -1,13 +1,9 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { PlayerConnections } from "./useConnectionForLobby";
 import useEffectWithDeps from "./useEffectWithDeps";
 import { ALL_COLORS } from "../constants";
 import { extractObjectDiff } from "../utility";
-import {
-  MessageChannelToPlayer,
-  MessageTypesToLobby,
-  MessageTypesToPlayer,
-} from "../messaging/dataChannelMessaging";
+import { MessageTypesToLobby } from "../messaging/dataChannelMessaging";
 
 type PlayerStates = { [id: string]: LobbyPlayer };
 

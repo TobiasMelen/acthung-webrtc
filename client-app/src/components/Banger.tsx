@@ -9,10 +9,6 @@ import {
 import PlayerLayout from "./Layout";
 import React from "react";
 
-const waitForRender = () =>
-  new Promise((resolve) =>
-    window.requestAnimationFrame(() => window.requestAnimationFrame(resolve))
-  );
 const style: CSSProperties = {
   textAlign: "center",
   margin: "0 auto",

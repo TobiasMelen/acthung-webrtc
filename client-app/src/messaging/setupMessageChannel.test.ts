@@ -4,7 +4,6 @@ import {
   booleanConverter,
   stringConverter,
   jsonConverter,
-  voidConverter,
   passValueConverter,
 } from "./valueConverters";
 import { EventEmitter } from "events";

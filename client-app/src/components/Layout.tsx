@@ -1,10 +1,4 @@
-import React, {
-  ComponentProps,
-  CSSProperties,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { ComponentProps, CSSProperties } from "react";
 import { useMemoMerge } from "../hooks/useMemoMerge";
 import useMediaMatch, { MediaQueryMatch } from "../hooks/useMediaMatch";
 

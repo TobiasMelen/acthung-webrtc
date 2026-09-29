@@ -13,8 +13,6 @@ type GameState = {
   allowSinglePlayer: boolean;
 };
 
-type PromiseResult<T> = T extends Promise<infer Result> ? Result : never;
-
 type Async<T extends (...params: any[]) => any> = T extends (
   ...params: any[]
 ) => any

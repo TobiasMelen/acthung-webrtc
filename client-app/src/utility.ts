@@ -2,8 +2,6 @@ export const typedEntries = Object.entries as <T, TKey extends keyof T>(
   o: T,
 ) => [Extract<TKey, string>, T[TKey]][];
 
-export const typedKeys = Object.keys as <T>(o: T) => (keyof T)[];
-
 export function extractObjectDiff<T>(
   source: T,
   update: T,
@@ -44,14 +42,6 @@ export function match<TMatch extends keyof any, TResult>(
   output: Record<TMatch, TResult>,
 ) {
   return output[value];
-}
-
-export function runInViewTransition(callback: () => void) {
-  if ("startViewTransition" in document) {
-    (document as any).startViewTransition(callback);
-  } else {
-    callback();
-  }
 }
 
 export function wait(ms: number) {

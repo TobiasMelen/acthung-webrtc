@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 export default function useJsonWebsocket(url?: string, reconnectAttempts = 5) {
   const [retries, setRetries] = useState(0);
