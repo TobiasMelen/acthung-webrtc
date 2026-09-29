@@ -15,7 +15,7 @@ export default defineConfig(({ command, mode }) => ({
     (plugin) => !!plugin
   ),
   define: {
-    global: "window",
+    global: "globalThis",
   },
   build: {
     sourcemap: true,
