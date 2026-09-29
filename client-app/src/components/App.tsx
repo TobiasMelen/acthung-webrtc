@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Banger from "./Banger";
+import NewLobby from "./NewLobby";
 
 const getHashValue = () =>
   location.hash.startsWith("#") ? location.hash.substring(1) : location.hash;
@@ -37,14 +38,7 @@ export default function App() {
       }
       //assume lobby
       import("./Lobby");
-      return (
-        <Banger>
-          New{" "}
-          <a href={`#lobby/${Math.random().toString(36).substring(8)}`}>
-            Lobby
-          </a>
-        </Banger>
-      );
+      return <NewLobby />;
     };
     match().then(setRender);
   }, [hash]);

@@ -9,6 +9,7 @@ type Props = {
 const buttonStyle: CSSProperties = {
   background: "none",
   border: "none",
+  color: "inherit",
   cursor: "pointer",
   padding: "0.5em",
   opacity: 0.8,
