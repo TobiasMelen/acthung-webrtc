@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useReducer } from "react";
+import React, { ComponentProps, useEffect, useMemo, useReducer, useState } from "react";
 import useLobbyConnection from "../hooks/useConnectionForLobby";
 import useStateForLobby, { LobbyPlayer } from "../hooks/useStateForLobby";
 import Banger from "./Banger";
@@ -9,9 +9,10 @@ import { GameSettingsProvider } from "./GameSettingsContext";
 import Scoreboard from "./Scoreboard";
 import useWakeLock from "../hooks/useWakeLock";
 import VerticalCounter from "./VerticalCounter";
-import useOnlineState from "../hooks/useOnlineState";
 import Leaderboard from "./Leaderboard";
 import useJsonBin from "../hooks/useJsonBin";
+import useChromecast from "../hooks/useChromecast";
+import Button from "./Button";
 
 type PlayerInfo = Pick<LobbyPlayer, "color" | "name">;
 
@@ -106,6 +107,51 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 }
 
 export default function Lobby({ lobbyName }: { lobbyName: string }) {
+  const chromecast = useChromecast();
+  const [isOnTv, setIsOnTv] = useState(false);
+
+  //The TV runs its own lobby with the same name, so this one must unmount to free the signaling channel.
+  if (isOnTv) {
+    return (
+      <Banger>
+        Lobby is on your <span style={{ color: "yellow" }}>TV</span>
+        <br />
+        <Button
+          style={{ fontSize: "0.2em", marginTop: "1em" }}
+          onClick={() => {
+            chromecast.stopCasting();
+            setIsOnTv(false);
+          }}
+        >
+          Bring it back here
+        </Button>
+      </Banger>
+    );
+  }
+
+  const lobbyUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}#lobby/${lobbyName}`;
+  return (
+    <LocalLobby
+      lobbyName={lobbyName}
+      chromecast={
+        chromecast.isAvailable
+          ? {
+              isConnected: chromecast.isConnected,
+              onCast: async () => setIsOnTv(await chromecast.castUrl(lobbyUrl)),
+            }
+          : undefined
+      }
+    />
+  );
+}
+
+function LocalLobby({
+  lobbyName,
+  chromecast,
+}: {
+  lobbyName: string;
+  chromecast?: ComponentProps<typeof Waiting>["chromecast"];
+}) {
   const [socketStatus, connections] = useLobbyConnection(lobbyName);
   const [players, gameState] = useStateForLobby(connections);
   useWakeLock();
@@ -134,6 +180,7 @@ export default function Lobby({ lobbyName }: { lobbyName: string }) {
         lobbyName={lobbyName}
         players={players}
         allowSinglePlayer={gameState.allowSinglePlayer}
+        chromecast={chromecast}
       />
     </GameSettingsProvider>
   );
@@ -143,14 +190,16 @@ export function Game({
   lobbyName,
   allowSinglePlayer = false,
   players,
+  chromecast,
 }: {
   lobbyName: string;
   players: LobbyPlayer[];
   allowSinglePlayer: boolean;
+  chromecast?: ComponentProps<typeof Waiting>["chromecast"];
 }) {
   const [gameState, dispatch] = useReducer(gameReducer, { type: "lobby" });
 
-  const [leaderboard, setLeaderboard] = useJsonBin<LeaderboardEntry[]>(
+  const [, setLeaderboard] = useJsonBin<LeaderboardEntry[]>(
     `leaderboard-snake`,
     [],
     import.meta.env.VITE_LEADERBOARD_JSON_BUCKET,
@@ -249,7 +298,7 @@ export function Game({
   const url = `${window.location.protocol}//${window.location.host}${window.location.pathname}#${lobbyName}`;
   switch (gameState.type) {
     case "lobby": {
-      return <Waiting players={players} url={url} />;
+      return <Waiting players={players} url={url} chromecast={chromecast} />;
     }
     case "playing": {
       const joinedPlayers = players.filter((p) =>

@@ -1,10 +1,12 @@
-import React, { CSSProperties, useEffect, useState } from "react";
+import React, { ComponentProps, CSSProperties, useEffect, useState } from "react";
 import Layout from "./Layout";
 import QrCode from "./QrCode";
+import ChromecastButton from "./ChromecastButton";
 
 type Props = {
   url: string;
   players: { id: string; name: string; color: string; ready: boolean }[];
+  chromecast?: ComponentProps<typeof ChromecastButton>;
 };
 
 const verticalFlex: CSSProperties = {
@@ -14,7 +16,7 @@ const verticalFlex: CSSProperties = {
   alignItems: "start",
 };
 
-export default function Waiting({ url, players }: Props) {
+export default function Waiting({ url, players, chromecast }: Props) {
   return (
     <Layout style={{ justifyContent: "space-around" }}>
       <div />
@@ -45,6 +47,15 @@ export default function Waiting({ url, players }: Props) {
         >
           {url}
         </a>
+        {chromecast && (
+          <ChromecastButton
+            {...chromecast}
+            style={{
+              display: "block",
+              margin: "1em auto 0 auto",
+            }}
+          />
+        )}
       </div>
       <div
         style={{
