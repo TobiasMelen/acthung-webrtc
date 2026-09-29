@@ -2,6 +2,7 @@ import React, { useRef, useEffect, CSSProperties, useState } from "react";
 import snakeGameContext from "../gameCanvas/snakeGameContext";
 import { LobbyPlayer } from "../hooks/useStateForLobby";
 import { wait } from "../utility";
+import viewportScale from "../viewportScale";
 
 type PlayerInfo = { name: string; color: string };
 
@@ -173,20 +174,22 @@ async function createSnakeCanvas(
 ) {
   canvas.style.height = "100%";
   canvas.style.width = "100%";
-  if (canvas.clientHeight > maxVerticalResolution) {
-    canvas.height = maxVerticalResolution;
-    canvas.width =
-      (maxVerticalResolution / canvas.clientHeight) * canvas.clientWidth;
-  } else {
-    canvas.height = canvas.clientHeight;
-    canvas.width = canvas.clientWidth;
-  }
+  const worldHeight = Math.min(
+    canvas.clientHeight / viewportScale,
+    maxVerticalResolution,
+  );
+  const pixelHeight = Math.min(
+    canvas.clientHeight * window.devicePixelRatio,
+    worldHeight,
+  );
+  canvas.height = pixelHeight;
+  canvas.width = (pixelHeight / canvas.clientHeight) * canvas.clientWidth;
 
   const gameContext = await (
     "OffscreenCanvas" in window && false
       ? (await import("../gameCanvas/offscreenGame")).default
       : snakeGameContext
-  )(canvas, contextOptions);
+  )(canvas, { worldHeight, ...contextOptions });
 
   return gameContext;
 }

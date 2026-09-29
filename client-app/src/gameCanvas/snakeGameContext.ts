@@ -36,7 +36,7 @@ export default function snakeGameContext(
     holeChanceIncrement = 0.04,
     holeDuration = 5,
     holeDurationVariance = 20,
-    maxVerticalResolution = 1080,
+    worldHeight = canvas.height,
     checkCollisions = true,
     useTrackingCollisionCanvas = false,
   } = {},
@@ -48,10 +48,9 @@ export default function snakeGameContext(
     }) as OffscreenCanvasRenderingContext2D) ??
     inlineThrow("Could not get Snake canvas 2d context");
   const holeLineWidth = lineWidth + 3;
-  const scaleFactor =
-    canvas.height > maxVerticalResolution
-      ? canvas.height / maxVerticalResolution
-      : 1;
+  //Snakes move in world units, the canvas may have fewer or more pixels than that.
+  const scaleFactor = canvas.height / worldHeight;
+  const world = { width: canvas.width / scaleFactor, height: worldHeight };
   context.scale(scaleFactor, scaleFactor);
 
   const createNewSnake = (input: SnakeInput) => ({
@@ -64,10 +63,10 @@ export default function snakeGameContext(
     position: {
       x:
         (Math.random() + startPositionSpread) *
-        (context.canvas.width * startPositionSpread),
+        (world.width * startPositionSpread),
       y:
         (Math.random() + startPositionSpread) *
-        (context.canvas.height * startPositionSpread),
+        (world.height * startPositionSpread),
     },
     currentHoleSection: 0,
     erasePos: null as null | { x: number; y: number },
@@ -132,13 +131,17 @@ export default function snakeGameContext(
       return;
     }
     if (snake.currentHoleSection <= 0) {
-      if (snake.holeChance > 0 && Math.random() * 100 < snake.holeChance) {
+      //Durations and chances are per 60fps frame, scale them by elapsed time.
+      if (
+        snake.holeChance > 0 &&
+        Math.random() * 100 < snake.holeChance * frameTimeOffset
+      ) {
         snake.currentHoleSection =
-          holeDuration + Math.floor(Math.random() * (holeDurationVariance * frameTimeOffset));
+          holeDuration + Math.floor(Math.random() * holeDurationVariance);
         snake.holeChance =
-          startingHoleChancePercantage + Math.random() * (holeChanceVariance * frameTimeOffset);
+          startingHoleChancePercantage + Math.random() * holeChanceVariance;
       } else {
-        snake.holeChance = snake.holeChance + holeChanceIncrement;
+        snake.holeChance += holeChanceIncrement * frameTimeOffset;
       }
     }
 
@@ -149,9 +152,9 @@ export default function snakeGameContext(
     if (
       checkCollisions &&
       (snake.position.x < 0 ||
-        snake.position.x > canvas.width ||
+        snake.position.x > world.width ||
         snake.position.y < 0 ||
-        snake.position.y > canvas.height)
+        snake.position.y > world.height)
     ) {
       collide(snake);
     }
@@ -239,8 +242,8 @@ export default function snakeGameContext(
       messagesFromCollisionGrid,
     );
     channel.send("init", {
-      width: canvas.width / scaleFactor,
-      height: canvas.height / scaleFactor,
+      width: world.width,
+      height: world.height,
       lineWidth,
       holeLineWidth,
     });
@@ -271,12 +274,7 @@ export default function snakeGameContext(
   let activeAbort: AbortController | null = null;
 
   function clearCanvas() {
-    context.clearRect(
-      0,
-      0,
-      canvas.width / scaleFactor,
-      canvas.height / scaleFactor,
-    );
+    context.clearRect(0, 0, world.width, world.height);
   }
 
   function showStartSequence(signal: AbortSignal) {
