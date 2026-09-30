@@ -6,7 +6,7 @@ import {
 } from "../messaging/dataChannelMessaging";
 import useSignaling from "./useSignaling";
 import debugLog from "../debugLog";
-import { toLegacyCompatibleDescription } from "../utility";
+import { adaptOfferForLegacyWebRtc } from "../utility";
 
 export type PlayerConnections = {
   [id: string]: MessageChannelToPlayer;
@@ -46,6 +46,7 @@ export default function useLobbyConnection(lobbyName: string) {
         }
         const peerLabel = `peer ${offerFrom.slice(0, 6)}:`;
         debugLog(peerLabel, "offer received");
+        const { offer, restoreAnswer } = adaptOfferForLegacyWebRtc(data);
 
         // Close any existing connection from the same peer before creating new one
         closeConnection(offerFrom);
@@ -69,7 +70,9 @@ export default function useLobbyConnection(lobbyName: string) {
               answerSent = true;
               debugLog(peerLabel, "answer sent");
               socket.send({
-                data: clientConnection.localDescription?.toJSON(),
+                data:
+                  clientConnection.localDescription &&
+                  restoreAnswer(clientConnection.localDescription.toJSON()),
                 to: offerFrom,
               });
             }
@@ -121,7 +124,7 @@ export default function useLobbyConnection(lobbyName: string) {
         let localDescription: RTCSessionDescriptionInit;
         try {
           await clientConnection.setRemoteDescription(
-            new RTCSessionDescription(toLegacyCompatibleDescription(data)),
+            new RTCSessionDescription(offer),
           );
           localDescription = await clientConnection.createAnswer();
           await clientConnection.setLocalDescription(localDescription);
@@ -133,7 +136,7 @@ export default function useLobbyConnection(lobbyName: string) {
 
         if (socket.supportsTrickleIce) {
           // Send answer immediately, ICE candidates will follow
-          socket.send({ data: localDescription, to: offerFrom });
+          socket.send({ data: restoreAnswer(localDescription), to: offerFrom });
         }
         // For non-trickle ICE, the answer is sent from onicecandidate when candidate is null
       },

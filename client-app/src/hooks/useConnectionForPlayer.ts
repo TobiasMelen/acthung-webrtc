@@ -5,7 +5,7 @@ import {
 } from "../messaging/dataChannelMessaging";
 import { DEFAULT_RTC_PEER_CONFIG } from "../constants";
 import useSignaling from "./useSignaling";
-import { toLegacyCompatibleDescription, uuidV4 } from "../utility";
+import { uuidV4 } from "../utility";
 
 type Props = {
   lobbyName: string;
@@ -101,9 +101,7 @@ export default function useConnectionForPlayer({ lobbyName }: Props) {
     socket.addListener(async ({ data }) => {
       clearTimeout(timeout);
       if (data.type === "answer") {
-        await peerConnection.setRemoteDescription(
-          toLegacyCompatibleDescription(data),
-        );
+        await peerConnection.setRemoteDescription(data);
       } else if ("candidate" in data && socket.supportsTrickleIce) {
         await peerConnection.addIceCandidate(data);
       }

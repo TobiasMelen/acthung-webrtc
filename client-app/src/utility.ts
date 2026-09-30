@@ -48,28 +48,35 @@ export function wait(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
 }
 
-//Chromium < 72 lacks connectionState, and every such version expects the old SCTP syntax.
+//Chromium < 72 lacks connectionState, which is where modern offers stop working unmodified.
 const isLegacyWebRtc =
   typeof RTCPeerConnection !== "undefined" &&
   !("connectionState" in RTCPeerConnection.prototype);
 
-export function toLegacyCompatibleDescription(
-  description: RTCSessionDescriptionInit,
-): RTCSessionDescriptionInit {
-  //Chromium < 71 rejects the whole description on this line, which only matters for media streams.
-  let sdp = description.sdp?.replace(/^a=extmap-allow-mixed\r?\n/gm, "");
-  if (isLegacyWebRtc && sdp) {
-    //Early 2017 Chromium (e.g. 56) can't parse the spec SCTP syntax, answers mirror the offer's syntax.
-    const sctpPort = /^a=sctp-port:(\d+)/m.exec(sdp)?.[1] ?? "5000";
-    sdp = sdp
-      .replace(
-        /^(m=application \d+) UDP\/DTLS\/SCTP webrtc-datachannel/m,
-        `$1 DTLS/SCTP ${sctpPort}`,
-      )
-      .replace(
-        /^a=sctp-port:\d+/m,
-        `a=sctpmap:${sctpPort} webrtc-datachannel 1024`,
-      );
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+//Old Chromium (e.g. Tizen 4's 56) rejects modern data channel offers: it chokes on
+//a=extmap-allow-mixed, needs the pre-2017 SCTP syntax and only accepts a data section with mid "data".
+//Answers mirror the offer, so the original mid is restored before the answer goes back.
+export function adaptOfferForLegacyWebRtc(offer: RTCSessionDescriptionInit) {
+  const mid = offer.sdp && /^a=mid:(\S+)/m.exec(offer.sdp)?.[1];
+  if (!isLegacyWebRtc || !offer.sdp || !mid) {
+    return { offer, restoreAnswer: (answer: RTCSessionDescriptionInit) => answer };
   }
-  return { type: description.type, sdp };
+  const renameMid = (sdp: string, from: string, to: string) =>
+    sdp
+      .replace(new RegExp(`^a=group:BUNDLE ${escapeRegExp(from)}(?=\\r?$)`, "m"), `a=group:BUNDLE ${to}`)
+      .replace(new RegExp(`^a=mid:${escapeRegExp(from)}(?=\\r?$)`, "m"), `a=mid:${to}`);
+  const sctpPort = /^a=sctp-port:(\d+)/m.exec(offer.sdp)?.[1] ?? "5000";
+  const sdp = renameMid(offer.sdp, mid, "data")
+    .replace(/^a=extmap-allow-mixed\r?\n/gm, "")
+    .replace(/^(m=application \d+) UDP\/DTLS\/SCTP webrtc-datachannel/m, `$1 DTLS/SCTP ${sctpPort}`)
+    .replace(/^a=sctp-port:\d+/m, `a=sctpmap:${sctpPort} webrtc-datachannel 1024`);
+  return {
+    offer: { type: offer.type, sdp },
+    restoreAnswer: (answer: RTCSessionDescriptionInit): RTCSessionDescriptionInit => ({
+      type: answer.type,
+      sdp: answer.sdp && renameMid(answer.sdp, "data", mid),
+    }),
+  };
 }
