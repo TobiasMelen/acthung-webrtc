@@ -18,10 +18,10 @@
 
 @keyframes growIn {
   from {
-    scale: 0;
+    transform: scale(0);
   }
   to {
-    scale: 1;
+    transform: scale(1);
   }
 }
 

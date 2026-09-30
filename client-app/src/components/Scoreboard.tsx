@@ -46,7 +46,6 @@ export default function Scoreboard({
               style={{
                 fontSize: "5.2em",
                 display: "flex",
-                gap: "0.225em",
                 justifyContent: "flex-end",
                 alignItems: "stretch",
               }}
@@ -55,7 +54,7 @@ export default function Scoreboard({
                 style={{
                   display: "flex",
                   flexDirection: "column-reverse",
-                  gap: "0.075em",
+                  marginRight: "0.225em",
                   padding: "0.175em 0",
                   justifyContent: "flex-start",
                 }}
@@ -66,6 +65,7 @@ export default function Scoreboard({
                       borderRadius: "100%",
                       backgroundColor: player.color,
                       padding: "0.075em",
+                      marginTop: "0.075em",
                       animation: 'growIn 500ms both cubic-bezier(0,0,0,2)'
                     }}
                   />,

@@ -20,22 +20,22 @@ function LeaderboardLine({
     <div
       style={{
         display: "flex",
-        gap: "1em",
+        margin: "0.15em 0",
       }}
     >
-      <span>{index + 1}.</span>
+      <span style={{ marginRight: "1em" }}>{index + 1}.</span>
       <span
         style={{
           color: entry.color,
           display: "flex",
           alignItems: "center",
-          gap: "0.5em",
+          marginRight: "1em",
         }}
       >
         <span>{entry.name}</span>
         {isYourScore && (
           <span
-            style={{ color: "white", fontSize: "0.5em", marginTop: '0.2em' }}
+            style={{ color: "white", fontSize: "0.5em", marginTop: '0.2em', marginLeft: "1em" }}
           >
             ← YOU
           </span>
@@ -81,7 +81,7 @@ export default function Leaderboard({
       }}
     >
       <div>BEST SCORES</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.3em" }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
         {displayEntries.map((entry, index) => (
           <LeaderboardLine
             key={entry.timestamp}
@@ -94,7 +94,7 @@ export default function Leaderboard({
         ))}
         {!isInTop3 && yourEntry && (
           <>
-            <div>...</div>
+            <div style={{ margin: "0.15em 0" }}>...</div>
             <LeaderboardLine
               key={yourEntry.timestamp}
               entry={yourEntry}
