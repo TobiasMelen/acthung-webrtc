@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import debugLog from "../debugLog";
 
 const PPNG_BASE = "https://ppng.io";
 
@@ -65,6 +66,7 @@ export default function usePPNGSignaling(
 
     const myChannel = `${room}/${myId}`;
     const url = `${PPNG_BASE}/${encodeURIComponent(myChannel)}`;
+    debugLog("signaling listening on", myChannel);
 
     const poll = async () => {
       //Lobbies can idle for hours, so only consecutive failures count and we never stop retrying.
@@ -98,11 +100,12 @@ export default function usePPNGSignaling(
               // Ignore parse errors
             }
           }
-        } catch {
+        } catch (error) {
           if (abortController.signal.aborted) {
             break;
           }
           failures++;
+          debugLog("signaling poll failed", failures, error);
           if (failures > reconnectAttempts) {
             setStatus("failed");
           }

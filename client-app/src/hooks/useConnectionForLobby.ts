@@ -5,6 +5,7 @@ import {
   MessageChannelToPlayer,
 } from "../messaging/dataChannelMessaging";
 import useSignaling from "./useSignaling";
+import debugLog from "../debugLog";
 
 export type PlayerConnections = {
   [id: string]: MessageChannelToPlayer;
@@ -42,6 +43,8 @@ export default function useLobbyConnection(lobbyName: string) {
         if (data.type !== "offer" || offerFrom == null) {
           return;
         }
+        const peerLabel = `peer ${offerFrom.slice(0, 6)}:`;
+        debugLog(peerLabel, "offer received");
 
         // Close any existing connection from the same peer before creating new one
         closeConnection(offerFrom);
@@ -63,6 +66,7 @@ export default function useLobbyConnection(lobbyName: string) {
             // null candidate means ICE gathering is complete
             if (event.candidate === null && !answerSent) {
               answerSent = true;
+              debugLog(peerLabel, "answer sent");
               socket.send({
                 data: clientConnection.localDescription?.toJSON(),
                 to: offerFrom,
@@ -87,6 +91,7 @@ export default function useLobbyConnection(lobbyName: string) {
         };
 
         clientConnection.ondatachannel = ({ channel }: RTCDataChannelEvent) => {
+          debugLog(peerLabel, "data channel open");
           channel.onclose = cleanupConnection;
           setClientConnections((connections) => ({
             ...connections,
@@ -103,22 +108,27 @@ export default function useLobbyConnection(lobbyName: string) {
           }
         };
         //connectionState only exists from Chromium 72, older engines need ICE state.
-        if (clientConnection.connectionState === undefined) {
-          clientConnection.oniceconnectionstatechange = () => {
-            const state = clientConnection.iceConnectionState;
-            if (state == "disconnected" || state == "failed") {
-              cleanupConnection();
-            }
-          };
+        const hasConnectionState = clientConnection.connectionState !== undefined;
+        clientConnection.oniceconnectionstatechange = () => {
+          const state = clientConnection.iceConnectionState;
+          debugLog(peerLabel, "ice", state);
+          if (!hasConnectionState && (state == "disconnected" || state == "failed")) {
+            cleanupConnection();
+          }
+        };
+
+        let localDescription: RTCSessionDescriptionInit;
+        try {
+          await clientConnection.setRemoteDescription(
+            new RTCSessionDescription(data),
+          );
+          localDescription = await clientConnection.createAnswer();
+          await clientConnection.setLocalDescription(localDescription);
+        } catch (error) {
+          debugLog(peerLabel, "answer failed", error);
+          return;
         }
-
-        await clientConnection.setRemoteDescription(
-          new RTCSessionDescription(data),
-        );
-
-        const localDescription = await clientConnection.createAnswer();
-
-        await clientConnection.setLocalDescription(localDescription);
+        debugLog(peerLabel, "answer created, gathering candidates");
 
         if (socket.supportsTrickleIce) {
           // Send answer immediately, ICE candidates will follow

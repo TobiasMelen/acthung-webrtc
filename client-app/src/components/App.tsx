@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import Banger from "./Banger";
 import NewLobby from "./NewLobby";
+import DebugOverlay from "./DebugOverlay";
+
+const showDebugOverlay = true;
 
 const getHashValue = () =>
   location.hash.startsWith("#") ? location.hash.substring(1) : location.hash;
@@ -43,5 +46,10 @@ export default function App() {
     match().then(setRender);
   }, [hash]);
 
-  return render;
+  return (
+    <>
+      {render}
+      {showDebugOverlay && <DebugOverlay />}
+    </>
+  );
 }
