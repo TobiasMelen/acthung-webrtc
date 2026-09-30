@@ -6,6 +6,7 @@ import {
 } from "../messaging/dataChannelMessaging";
 import useSignaling from "./useSignaling";
 import debugLog from "../debugLog";
+import { toLegacyCompatibleDescription } from "../utility";
 
 export type PlayerConnections = {
   [id: string]: MessageChannelToPlayer;
@@ -120,7 +121,7 @@ export default function useLobbyConnection(lobbyName: string) {
         let localDescription: RTCSessionDescriptionInit;
         try {
           await clientConnection.setRemoteDescription(
-            new RTCSessionDescription(data),
+            new RTCSessionDescription(toLegacyCompatibleDescription(data)),
           );
           localDescription = await clientConnection.createAnswer();
           await clientConnection.setLocalDescription(localDescription);

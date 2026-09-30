@@ -47,3 +47,13 @@ export function match<TMatch extends keyof any, TResult>(
 export function wait(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
 }
+
+//Chromium < 71 rejects the whole description on this line, which only matters for media streams.
+export function toLegacyCompatibleDescription(
+  description: RTCSessionDescriptionInit,
+): RTCSessionDescriptionInit {
+  return {
+    type: description.type,
+    sdp: description.sdp?.replace(/^a=extmap-allow-mixed\r?\n/gm, ""),
+  };
+}
