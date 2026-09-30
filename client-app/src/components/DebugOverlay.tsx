@@ -1,5 +1,6 @@
 import React, { CSSProperties, useEffect, useState } from "react";
 import debugLog, { subscribeDebugLog } from "../debugLog";
+import webRtcSelfTest from "../webRtcSelfTest";
 
 const overlayStyle: CSSProperties = {
   position: "fixed",
@@ -27,6 +28,7 @@ export default function DebugOverlay() {
     addEventListener("error", onError);
     addEventListener("unhandledrejection", onRejection);
     debugLog(navigator.userAgent);
+    window.RTCPeerConnection && webRtcSelfTest();
     const unsubscribe = subscribeDebugLog(setLines);
     return () => {
       removeEventListener("error", onError);
