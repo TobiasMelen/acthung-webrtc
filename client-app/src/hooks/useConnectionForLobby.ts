@@ -6,6 +6,7 @@ import {
 } from "../messaging/dataChannelMessaging";
 import useSignaling from "./useSignaling";
 import debugLog from "../debugLog";
+import { sectionLines } from "../webRtcSelfTest";
 import { adaptOfferForLegacyWebRtc } from "../utility";
 
 export type PlayerConnections = {
@@ -47,6 +48,8 @@ export default function useLobbyConnection(lobbyName: string) {
         const peerLabel = `peer ${offerFrom.slice(0, 6)}:`;
         debugLog(peerLabel, "offer received");
         const { offer, restoreAnswer } = adaptOfferForLegacyWebRtc(data);
+        debugLog(peerLabel, offer === data ? "offer as is:" : "offer adapted:", sectionLines(offer.sdp));
+
         // Close any existing connection from the same peer before creating new one
         closeConnection(offerFrom);
 
