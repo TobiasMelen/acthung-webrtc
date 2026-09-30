@@ -48,12 +48,28 @@ export function wait(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
 }
 
-//Chromium < 71 rejects the whole description on this line, which only matters for media streams.
+//Chromium < 72 lacks connectionState, and every such version expects the old SCTP syntax.
+const isLegacyWebRtc =
+  typeof RTCPeerConnection !== "undefined" &&
+  !("connectionState" in RTCPeerConnection.prototype);
+
 export function toLegacyCompatibleDescription(
   description: RTCSessionDescriptionInit,
 ): RTCSessionDescriptionInit {
-  return {
-    type: description.type,
-    sdp: description.sdp?.replace(/^a=extmap-allow-mixed\r?\n/gm, ""),
-  };
+  //Chromium < 71 rejects the whole description on this line, which only matters for media streams.
+  let sdp = description.sdp?.replace(/^a=extmap-allow-mixed\r?\n/gm, "");
+  if (isLegacyWebRtc && sdp) {
+    //Early 2017 Chromium (e.g. 56) can't parse the spec SCTP syntax, answers mirror the offer's syntax.
+    const sctpPort = /^a=sctp-port:(\d+)/m.exec(sdp)?.[1] ?? "5000";
+    sdp = sdp
+      .replace(
+        /^(m=application \d+) UDP\/DTLS\/SCTP webrtc-datachannel/m,
+        `$1 DTLS/SCTP ${sctpPort}`,
+      )
+      .replace(
+        /^a=sctp-port:\d+/m,
+        `a=sctpmap:${sctpPort} webrtc-datachannel 1024`,
+      );
+  }
+  return { type: description.type, sdp };
 }

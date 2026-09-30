@@ -3,9 +3,8 @@ import debugLog, { subscribeDebugLog } from "../debugLog";
 
 const overlayStyle: CSSProperties = {
   position: "fixed",
-  //Keep clear of TV overscan, which can crop a few percent off each edge.
-  left: "5vw",
-  top: "5vh",
+  left: 0,
+  bottom: 0,
   zIndex: 1000,
   maxWidth: "60vw",
   padding: "0.5em",
