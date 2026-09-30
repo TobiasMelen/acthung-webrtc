@@ -7,12 +7,13 @@
     "dev": "vite --host",
     "start": "yarn dev",
     "build": "vite build",
-    "test": "find . -iregex '.*\\.test.ts' -exec esr {} +"
+    "test": "node test.mjs"
   },
   "dependencies": {
-    "esbuild-runner": "^2.2.2",
+    "@vitejs/plugin-legacy": "8",
+    "abortcontroller-polyfill": "^1.7.8",
     "preact": "^10.13.2",
-    "vite": "^4.3.3"
+    "vite": "8"
   },
   "devDependencies": {
     "@prefresh/vite": "^2.2.9",

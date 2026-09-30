@@ -102,6 +102,15 @@ export default function useLobbyConnection(lobbyName: string) {
             cleanupConnection();
           }
         };
+        //connectionState only exists from Chromium 72, older engines need ICE state.
+        if (clientConnection.connectionState === undefined) {
+          clientConnection.oniceconnectionstatechange = () => {
+            const state = clientConnection.iceConnectionState;
+            if (state == "disconnected" || state == "failed") {
+              cleanupConnection();
+            }
+          };
+        }
 
         await clientConnection.setRemoteDescription(
           new RTCSessionDescription(data),
